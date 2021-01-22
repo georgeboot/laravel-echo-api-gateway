@@ -1,0 +1,56 @@
+{
+    "name": "georgeboot/laravel-echo-api-gateway",
+    "description": "Use Laravel Echo with API Gateway Websockets",
+    "keywords": [
+        "laravel",
+        "echo",
+        "websockets"
+    ],
+    "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "George Boot",
+            "email": "george@famboot.nl"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.0",
+        "ext-json": "*",
+        "aws/aws-sdk-php": "^3.80",
+        "bref/bref": "^1.1",
+        "guzzlehttp/guzzle": "^6.3|^7.0",
+        "laravel/framework": "^6.0|^7.0|^8.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.2",
+        "orchestra/testbench": "^4.0|^5.0|^6.0",
+        "phpunit/phpunit": "^8.0|^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Georgeboot\\LaravelEchoApiGateway\\": "php-src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Georgeboot\\LaravelEchoApiGateway\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Georgeboot\\LaravelEchoApiGateway\\LaravelEchoApiGatewayServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
