@@ -10,6 +10,16 @@ messages. We also configure Laravel to use this connection as a broadcast driver
 This package currently only works if you deploy your app using [Bref](https://bref.sh), but it could theoretically also
 be deployed alongside a [Laravel Vapor](https://vapor.laravel.com) project.
 
+## Requirements
+
+In order to use this package, your project needs to meet the following criteria:
+
+- PHP 7.4 or 8.x
+- Laravel 6, 7 or 8
+- Uses [bref](https://bref.sh) to deploy to AWS
+- Has a working queue
+- Uses Laravel Mix or any other tool to bundle your assets
+
 ## Installation
 
 Installation of this package is fairly simply.
