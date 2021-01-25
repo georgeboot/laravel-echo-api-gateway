@@ -2,8 +2,9 @@ import {Connector} from "laravel-echo/src/connector/connector";
 import {OurConnector} from "./OurWebsocket";
 import {ApiGatewayChannel} from "./ApiGatewayChannel";
 
-export class LaravelEchoApiGatewayConnector extends Connector
-{
+export const broadcaster = options => new LaravelEchoApiGatewayConnector(options);
+
+export class LaravelEchoApiGatewayConnector extends Connector {
     /**
      * The Socket.io connection instance.
      */

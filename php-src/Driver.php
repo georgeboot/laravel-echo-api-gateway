@@ -13,7 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
-class LaravelEchoApiGatewayDriver extends Broadcaster
+class Driver extends Broadcaster
 {
     use UsePusherChannelConventions;
 
@@ -23,19 +23,32 @@ class LaravelEchoApiGatewayDriver extends Broadcaster
 
     public function __construct(array $config)
     {
-        $this->dynamoDb = new DynamoDbClient($config + ['version' => '2012-08-10']);
-        $this->apiGatewayManagementApiClient = new ApiGatewayManagementApiClient($config + [
-            'version' => '2018-11-29',
-            'endpoint' => 'https://------.execute-api.-----.amazonaws.com/dev', // TODO: figure out how we can inject this one
-        ]);
+        $this->dynamoDb = $this->getDynamoDbClient($config);
+
+        $this->apiGatewayManagementApiClient = $this->getApiGatewayManagementApiClient($config);
+
         $this->table = $config['table'];
     }
 
+    protected function getDynamoDbClient(array $config): DynamoDbClient
+    {
+        return new DynamoDbClient(array_merge($config['connection'], [
+            'version' => '2012-08-10',
+        ]));
+    }
+
+    protected function getApiGatewayManagementApiClient(array $config): ApiGatewayManagementApiClient
+    {
+        return new ApiGatewayManagementApiClient(array_merge($config['connection'], [
+            'version' => '2018-11-29',
+            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']),
+        ]));
+    }
 
     /**
      * Authenticate the incoming request for a given channel.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      *
      * @return mixed
      */

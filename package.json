@@ -1,58 +1,60 @@
 {
-  "name": "laravel-echo-api-gateway",
-  "version": "1.0.0",
-  "description": "Use Laravel Echo with API Gateway Websockets",
-  "keywords": [
-    "laravel",
-    "echo",
-    "websockets"
-  ],
-  "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/georgeboot/laravel-echo-api-gateway"
-  },
-  "author": {
-    "name": "George Boot"
-  },
-  "license": "MIT",
-  "main": "dist/laravel-echo-api-gateway-connector.common.js",
-  "module": "dist/laravel-echo-api-gateway-connector.js",
-  "types": "dist/laravel-echo-api-gateway-connector.d.ts",
-  "scripts": {
-    "build": "npm run compile && npm run declarations",
-    "compile": "./node_modules/.bin/rollup -c",
-    "declarations": "./node_modules/.bin/tsc --emitDeclarationOnly",
-    "lint": "eslint --ext .js,.ts ./src ./tests",
-    "prepublish": "npm run build",
-    "release": "npm run test && standard-version && git push --follow-tags && npm publish",
-    "test": "jest"
-  },
-  "devDependencies": {
-    "@babel/plugin-proposal-decorators": "^7.8.3",
-    "@babel/plugin-proposal-export-namespace-from": "^7.8.3",
-    "@babel/plugin-proposal-function-sent": "^7.8.3",
-    "@babel/plugin-proposal-numeric-separator": "^7.8.3",
-    "@babel/plugin-proposal-throw-expressions": "^7.8.3",
-    "@babel/plugin-transform-object-assign": "^7.8.3",
-    "@babel/preset-env": "^7.9.6",
-    "@rollup/plugin-babel": "^5.0.0",
-    "@types/jest": "^24.0.18",
-    "@types/node": "^12.7.5",
-    "@typescript-eslint/eslint-plugin": "^3.7.0",
-    "@typescript-eslint/parser": "^3.7.0",
-    "axios": "^0.21.1",
-    "eslint": "^7.5.0",
-    "jest": "^24.9.0",
-    "laravel-echo": "^1.10.0",
-    "rollup": "^2.10.2",
-    "rollup-plugin-typescript2": "^0.27.1",
-    "standard-version": "^8.0.1",
-    "ts-jest": "^24.1.0",
-    "tslib": "^1.10.0",
-    "typescript": "^3.6.3"
-  },
-  "engines": {
-    "node": ">=10"
-  }
+    "name": "laravel-echo-api-gateway",
+    "version": "1.0.0",
+    "description": "Use Laravel Echo with API Gateway Websockets",
+    "keywords": [
+        "laravel",
+        "echo",
+        "websockets",
+        "bref",
+        "serverless"
+    ],
+    "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/georgeboot/laravel-echo-api-gateway"
+    },
+    "author": {
+        "name": "George Boot"
+    },
+    "license": "MIT",
+    "main": "dist/laravel-echo-api-gateway-connector.common.js",
+    "module": "dist/laravel-echo-api-gateway-connector.js",
+    "types": "dist/laravel-echo-api-gateway-connector.d.ts",
+    "scripts": {
+        "build": "npm run compile && npm run declarations",
+        "compile": "./node_modules/.bin/rollup -c",
+        "declarations": "./node_modules/.bin/tsc --emitDeclarationOnly",
+        "lint": "eslint --ext .js,.ts ./src ./tests",
+        "prepublish": "npm run build",
+        "release": "npm run test && standard-version && git push --follow-tags && npm publish",
+        "test": "jest"
+    },
+    "devDependencies": {
+        "@babel/plugin-proposal-decorators": "^7.8.3",
+        "@babel/plugin-proposal-export-namespace-from": "^7.8.3",
+        "@babel/plugin-proposal-function-sent": "^7.8.3",
+        "@babel/plugin-proposal-numeric-separator": "^7.8.3",
+        "@babel/plugin-proposal-throw-expressions": "^7.8.3",
+        "@babel/plugin-transform-object-assign": "^7.8.3",
+        "@babel/preset-env": "^7.9.6",
+        "@rollup/plugin-babel": "^5.0.0",
+        "@types/jest": "^24.0.18",
+        "@types/node": "^12.7.5",
+        "@typescript-eslint/eslint-plugin": "^3.7.0",
+        "@typescript-eslint/parser": "^3.7.0",
+        "axios": "^0.21.1",
+        "eslint": "^7.5.0",
+        "jest": "^24.9.0",
+        "laravel-echo": "^1.10.0",
+        "rollup": "^2.10.2",
+        "rollup-plugin-typescript2": "^0.27.1",
+        "standard-version": "^8.0.1",
+        "ts-jest": "^24.1.0",
+        "tslib": "^1.10.0",
+        "typescript": "^3.6.3"
+    },
+    "engines": {
+        "node": ">=10"
+    }
 }

@@ -4,7 +4,9 @@
     "keywords": [
         "laravel",
         "echo",
-        "websockets"
+        "websockets",
+        "bref",
+        "serverless"
     ],
     "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
     "type": "library",
@@ -44,7 +46,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Georgeboot\\LaravelEchoApiGateway\\LaravelEchoApiGatewayServiceProvider"
+                "Georgeboot\\LaravelEchoApiGateway\\ServiceProvider"
             ]
         }
     },

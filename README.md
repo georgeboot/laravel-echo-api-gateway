@@ -1,42 +1,34 @@
 # laravel-echo-api-gateway
 
+This package enables you to use API Gateway‘s Websockets as a driver for [Laravel Echo](https://github.com/laravel/echo)
+, so you don’t have to use services like Pusher or Socket.io.
+
+It works by setting up a websocket API in API Gateway, and configure it to invoke a Lambda function, every time a
+message is sent to the websocket. This package includes and autoconfigures a handler to respond to these websocket
+messages. We also configure Laravel to use this connection as a broadcast driver.
+
+This package currently only works if you deploy your app using [Bref](https://github.com/brefphp/bref), but it could
+theoretically also be deployed alongside a [Laravel Vapor](https://vapor.laravel.com) project.
+
 ## Installation
 
-Install the composer package:
+Installation of this package is fairly simply.
 
-```
+First we have to install both the composer and npm package:
+
+```shell
 composer require georgeboot/laravel-echo-api-gateway
-```
 
-And also the npm package:
-
-```
 yarn add georgeboot/laravel-echo-api-gateway
+# or
+npn install --save georgeboot/laravel-echo-api-gateway
 ```
 
-Edit your `serverless.yml` file:
+Next, we have to add some elements to our `serverless.yml` file.
+
+Add a new function that will handle websocket events (messages etc):
 
 ```yaml
-service: turbo-playground
-#org: georgeboot
-#app: bref-test
-
-provider:
-    name: aws
-    region: eu-central-1
-    runtime: provided.al2
-    stage: production
-
-    environment:
-        # Add this line
-        BROADCAST_API_GATEWAY_URL: !Join [ '', [ 'wss://', !Ref "WebsocketsApi", '.execute-api.', "${self:provider.region}", '.', !Ref "AWS::URLSuffix", '/', "${self:provider.stage}" ] ]
-
-    iamRoleStatements:
-        # Add this role statement
-        - Effect: Allow
-          Action: [ dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:Query ]
-          Resource: !GetAtt ConnectionsTable.Arn
-
 functions:
     # Add this function
     websocket:
@@ -47,7 +39,11 @@ functions:
             - websocket: $connect
             - websocket: $disconnect
             - websocket: $default
+```
 
+Add a resource to create and configure our DynamoDB table, where connections will be stored in:
+
+```yaml
 resources:
     Resources:
         # Add this resource
@@ -81,31 +77,36 @@ resources:
                 BillingMode: PAY_PER_REQUEST
 ```
 
-Edit your `.env`:
+Add the following `iamRoleStatement` to enable our Lambda function to access the table:
 
-```dotenv
-MIX_BROADCAST_API_GATEWAY_URL=wss://1234567890.execute-api.your-region.amazonaws.com/stage-name
-MIX_BROADCAST_API_GATEWAY_URL="${BROADCAST_API_GATEWAY_URL}"
+```yaml
+provider:
+    name: aws
+
+    iamRoleStatements:
+        # Add this iamRoleStatement
+        - Effect: Allow
+          Action: [ dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:Query ]
+          Resource: !GetAtt ConnectionsTable.Arn
 ```
 
-Add to your javascript file:
+Add an environment variable to autogenerate our websocket URL:
 
-```js
-import Echo from 'laravel-echo';
-import LaravelEchoApiGatewayConnector from 'laravel-echo-api-gateway';
+```yaml
+provider:
+    name: aws
 
-const echo = new Echo({
-    broadcaster: options => new LaravelEchoApiGatewayConnector(options),
-    host: process.env.MIX_BROADCAST_API_GATEWAY_URL,
-});
+    environment:
+        # Add this line
+        BROADCAST_API_GATEWAY_URL: !Join [ '', [ 'wss://', !Ref "WebsocketsApi", '.execute-api.', "${self:provider.region}", '.', !Ref "AWS::URLSuffix", '/', "${self:provider.stage}" ] ]
 ```
 
-In `handlers/websocket.php`:
+Next, create the PHP handler file in `handlers/websocker.php`
 
 ```php
 <?php
 
-use Georgeboot\LaravelEchoApiGateway\LaravelEchoApiGatewayHandler;
+use Georgeboot\LaravelEchoApiGateway\Handler;
 use Illuminate\Foundation\Application;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -116,5 +117,25 @@ $app = require __DIR__ . '/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-return $app->make(LaravelEchoApiGatewayHandler::class);
+return $app->make(Handler::class);
 ```
+
+Edit your `.env`:
+
+```dotenv
+BROADCAST_DRIVER=laravel-echo-api-gateway
+MIX_BROADCAST_API_GATEWAY_URL="${BROADCAST_API_GATEWAY_URL}"
+```
+
+Add to your javascript file:
+
+```js
+import Echo from 'laravel-echo';
+import {broadcaster} from 'laravel-echo-api-gateway';
+
+const echo = new Echo({
+    broadcaster,
+    host: process.env.MIX_BROADCAST_API_GATEWAY_URL,
+});
+```
+

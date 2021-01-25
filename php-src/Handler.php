@@ -9,7 +9,7 @@ use Bref\Event\Http\HttpResponse;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Throwable;
 
-class LaravelEchoApiGatewayHandler extends WebsocketHandler
+class Handler extends WebsocketHandler
 {
     protected ExceptionHandler $exceptionHandler;
 
