@@ -46,7 +46,6 @@ functions:
         layers:
             - ${bref:layer.php-80}
         events:
-            - websocket: $connect
             - websocket: $disconnect
             - websocket: $default
 ```

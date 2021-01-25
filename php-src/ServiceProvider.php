@@ -28,7 +28,6 @@ class ServiceProvider extends LaravelServiceProvider
 
     public function boot(BroadcastManager $broadcastManager)
     {
-        dump('extending');
         $broadcastManager->extend('laravel-echo-api-gateway', function (): Broadcaster {
             return new Driver(
                 config('laravel-echo-api-gateway')

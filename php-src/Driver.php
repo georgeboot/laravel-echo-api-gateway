@@ -2,11 +2,7 @@
 
 namespace Georgeboot\LaravelEchoApiGateway;
 
-use Aws\ApiGatewayManagementApi\ApiGatewayManagementApiClient;
-use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
-use Aws\DynamoDb\DynamoDbClient;
-use GuzzleHttp\Promise\Promise;
-use GuzzleHttp\Promise\Utils;
+use Georgeboot\LaravelEchoApiGateway\Jobs\QueueMessageToChannels;
 use Illuminate\Broadcasting\Broadcasters\Broadcaster;
 use Illuminate\Broadcasting\Broadcasters\UsePusherChannelConventions;
 use Illuminate\Support\Arr;
@@ -16,34 +12,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class Driver extends Broadcaster
 {
     use UsePusherChannelConventions;
-
-    protected DynamoDbClient $dynamoDb;
-    protected ApiGatewayManagementApiClient $apiGatewayManagementApiClient;
-    protected string $table;
-
-    public function __construct(array $config)
-    {
-        $this->dynamoDb = $this->getDynamoDbClient($config);
-
-        $this->apiGatewayManagementApiClient = $this->getApiGatewayManagementApiClient($config);
-
-        $this->table = $config['table'];
-    }
-
-    protected function getDynamoDbClient(array $config): DynamoDbClient
-    {
-        return new DynamoDbClient(array_merge($config['connection'], [
-            'version' => '2012-08-10',
-        ]));
-    }
-
-    protected function getApiGatewayManagementApiClient(array $config): ApiGatewayManagementApiClient
-    {
-        return new ApiGatewayManagementApiClient(array_merge($config['connection'], [
-            'version' => '2018-11-29',
-            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']),
-        ]));
-    }
 
     /**
      * Authenticate the incoming request for a given channel.
@@ -64,7 +32,6 @@ class Driver extends Broadcaster
             $request, $channelName
         );
     }
-
 
     /**
      * Return the valid authentication response.
@@ -136,42 +103,16 @@ class Driver extends Broadcaster
      */
     public function broadcast(array $channels, $event, array $payload = [])
     {
-        // load all connections for the channels we want to send to
-
-        // SELECT `connectionId` from websocket_connections where channel IN ('channel-1', 'channel-2');
-        // or similar dynamo query
-
-        $connectionIds = [
-            'fakeConnectionId1',
-            'fakeConnectionId2',
-            'fakeConnectionId3',
-        ];
-
-        $payload = [
+        $data = json_encode([
             'event' => $event,
-            'data' => json_encode($payload),
-        ];
+            'data' => $payload,
+        ]);
 
-        $optionalConnectionIdToIgnore = Arr::pull($payload, 'socket');
-
-        $promises = collect($connectionIds)
-            ->reject(fn($connectionId) => $connectionId === $optionalConnectionIdToIgnore)
-            ->keyBy(fn(string $connectionId) => $connectionId)
-            ->map(fn(string $connectionId): Promise => $this->apiGatewayManagementApiClient->postToConnectionAsync([
-                'ConnectionId' => $connectionId,
-                'Data' => json_encode($payload),
-            ])->otherwise(function (ApiGatewayManagementApiException $exception) {
-                // $exception->getErrorCode() is one of:
-                // GoneException
-                // LimitExceededException
-                // PayloadTooLargeException
-                // ForbiddenException
-
-                // otherwise: call $exception->getPrevious() which is a guzzle exception
-            }));
-
-        // resolve all promises. results are keyed by connectionId
-        $results = Utils::all($promises)->wait();
+        dispatch(new QueueMessageToChannels(
+            $channels,
+            $data,
+            Arr::pull($payload, 'socket')
+        ));
 
         return;
 
