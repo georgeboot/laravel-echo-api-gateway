@@ -24,14 +24,24 @@ class ServiceProvider extends LaravelServiceProvider
                 __DIR__ . '/../config/laravel-echo-api-gateway.php' => config_path('laravel-echo-api-gateway.php'),
             ], 'laravel-echo-api-gateway-config');
         }
+
+        $this->app->bind(ConnectionRepository::class, function () {
+            return new ConnectionRepository(
+                config('laravel-echo-api-gateway')
+            );
+        });
+
+        $this->app->bind(SubscriptionRepository::class, function () {
+            return new SubscriptionRepository(
+                config('laravel-echo-api-gateway')
+            );
+        });
     }
 
     public function boot(BroadcastManager $broadcastManager)
     {
         $broadcastManager->extend('laravel-echo-api-gateway', function (): Broadcaster {
-            return new Driver(
-                config('laravel-echo-api-gateway')
-            );
+            return new Driver();
         });
     }
 }

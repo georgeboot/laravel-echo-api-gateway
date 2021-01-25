@@ -2,14 +2,13 @@
 
 namespace Georgeboot\LaravelEchoApiGateway\Jobs;
 
-use Aws\ApiGatewayManagementApi\ApiGatewayManagementApiClient;
 use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
+use Georgeboot\LaravelEchoApiGateway\ConnectionRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Str;
 
 class SendMessageToConnection implements ShouldQueue
 {
@@ -18,30 +17,19 @@ class SendMessageToConnection implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    protected ApiGatewayManagementApiClient $apiGatewayManagementApiClient;
     protected string $connectionId;
     protected string $data;
 
     public function __construct(string $connectionId, string $data)
     {
-        $config = config('laravel-echo-api-gateway');
-
-        $this->apiGatewayManagementApiClient = new ApiGatewayManagementApiClient(array_merge($config['connection'], [
-            'version' => '2018-11-29',
-            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']),
-        ]));
-
         $this->connectionId = $connectionId;
         $this->data = $data;
     }
 
-    public function handle()
+    public function handle(ConnectionRepository $connectionRepository)
     {
         try {
-            $this->apiGatewayManagementApiClient->postToConnection([
-                'ConnectionId' => $this->connectionId,
-                'Data' => $this->data,
-            ]);
+            $connectionRepository->sendMessage($this->connectionId, $this->data);
         } catch (ApiGatewayManagementApiException $exception) {
             // $exception->getErrorCode() is one of:
             // GoneException

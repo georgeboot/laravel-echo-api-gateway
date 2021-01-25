@@ -2,36 +2,23 @@
 
 namespace Georgeboot\LaravelEchoApiGateway;
 
-use Aws\DynamoDb\DynamoDbClient;
 use Bref\Context\Context;
 use Bref\Event\ApiGateway\WebsocketEvent;
 use Bref\Event\ApiGateway\WebsocketHandler;
 use Bref\Event\Http\HttpResponse;
 use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
 
 class Handler extends WebsocketHandler
 {
     protected ExceptionHandler $exceptionHandler;
-    protected DynamoDbClient $dynamoDb;
-    protected string $table;
+    protected SubscriptionRepository $connectionRepository;
 
-    public function __construct(ExceptionHandler $exceptionHandler)
+    public function __construct(ExceptionHandler $exceptionHandler, SubscriptionRepository $connectionRepository)
     {
-        $config = config('laravel-echo-api-gateway');
-
         $this->exceptionHandler = $exceptionHandler;
-        $this->dynamoDb = $this->getDynamoDbClient($config);
-        $this->table = $config['table'];
-    }
-
-    protected function getDynamoDbClient(array $config): DynamoDbClient
-    {
-        return new DynamoDbClient(array_merge($config['connection'], [
-            'version' => '2012-08-10',
-        ]));
+        $this->connectionRepository = $connectionRepository;
     }
 
     public function handleWebsocket(WebsocketEvent $event, Context $context): HttpResponse
@@ -53,22 +40,7 @@ class Handler extends WebsocketHandler
 
     protected function handleDisconnect(WebsocketEvent $event, Context $context): HttpResponse
     {
-        $response = $this->dynamoDb->query([
-            'TableName' => $this->table,
-            'IndexName' => 'lookup-by-connection',
-            'KeyConditionExpression' => 'connectionId = :connectionId',
-            'ExpressionAttributeValues' => [
-                ':connectionI' => ['S' => $event->getConnectionId()],
-            ],
-        ]);
-
-        $this->dynamoDb->batchWriteItem([
-            $this->table => collect($response['Items'])->map(fn($item) => [
-                'DeleteRequest' => [
-                    'Key' => Arr::only($item, ['connectionId', 'channel']),
-                ],
-            ])->toArray(),
-        ]);
+        $this->connectionRepository->clearConnection($event->getConnectionId());
 
         return new HttpResponse('OK');
     }
@@ -142,13 +114,7 @@ class Handler extends WebsocketHandler
             }
         }
 
-        $this->dynamoDb->putItem([
-            'TableName' => $this->table,
-            'Item' => [
-                'connectionId' => ['S' => $event->getConnectionId()],
-                'channel' => ['S' => $channel],
-            ],
-        ]);
+        $this->connectionRepository->subscribeToChannel($event->getConnectionId(), $channel);
 
         return new HttpResponse(json_encode([
             'event' => 'subscription_succeeded',
@@ -162,13 +128,7 @@ class Handler extends WebsocketHandler
         $eventBody = json_decode($event->getBody(), true);
         $channel = $eventBody['data']['channel'];
 
-        $this->dynamoDb->deleteItem([
-            'TableName' => $this->table,
-            'Key' => [
-                'connectionId' => ['S' => $event->getConnectionId()],
-                'channel' => ['S' => $channel],
-            ],
-        ]);
+        $this->connectionRepository->unsubscribeFromChannel($event->getConnectionId(), $channel);
 
         return new HttpResponse(json_encode([
             'event' => 'unsubscription_succeeded',
