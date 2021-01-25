@@ -7,8 +7,8 @@ It works by setting up a websocket API in API Gateway, and configure it to invok
 message is sent to the websocket. This package includes and autoconfigures a handler to respond to these websocket
 messages. We also configure Laravel to use this connection as a broadcast driver.
 
-This package currently only works if you deploy your app using [Bref](https://github.com/brefphp/bref), but it could
-theoretically also be deployed alongside a [Laravel Vapor](https://vapor.laravel.com) project.
+This package currently only works if you deploy your app using [Bref](https://bref.sh), but it could theoretically also
+be deployed alongside a [Laravel Vapor](https://vapor.laravel.com) project.
 
 ## Installation
 
