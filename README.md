@@ -139,3 +139,4 @@ const echo = new Echo({
 });
 ```
 
+Lastly, you have to generate your assets by running Laravel Mix. After this step, you should be up and running.
