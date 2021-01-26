@@ -1,5 +1,5 @@
 import {Connector} from "laravel-echo/src/connector/connector";
-import {OurConnector} from "./OurWebsocket";
+import {LaravelEchoApiGatewayWebsocket} from "./LaravelEchoApiGatewayWebsocket";
 import {ApiGatewayChannel} from "./ApiGatewayChannel";
 
 export const broadcaster = options => new LaravelEchoApiGatewayConnector(options);
@@ -8,7 +8,7 @@ export class LaravelEchoApiGatewayConnector extends Connector {
     /**
      * The Socket.io connection instance.
      */
-    socket: OurConnector;
+    socket: LaravelEchoApiGatewayWebsocket;
 
     /**
      * All of the subscribed channel names.
@@ -19,7 +19,7 @@ export class LaravelEchoApiGatewayConnector extends Connector {
      * Create a fresh Socket.io connection.
      */
     connect(): void {
-        this.socket = new OurConnector(this.options);
+        this.socket = new LaravelEchoApiGatewayWebsocket(this.options);
 
         return null;
 

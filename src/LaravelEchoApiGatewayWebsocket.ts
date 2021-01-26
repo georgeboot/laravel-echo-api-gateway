@@ -4,8 +4,7 @@ import {AxiosResponse} from "axios";
 export type Options = { authEndpoint: string, host: string };
 export type MessageBody = { event: string, channel?: string, data: object };
 
-export class OurConnector
-{
+export class LaravelEchoApiGatewayWebsocket {
     buffer: Array<object> = [];
 
     options: Options;

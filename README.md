@@ -110,7 +110,7 @@ provider:
         BROADCAST_API_GATEWAY_URL: !Join [ '', [ 'wss://', !Ref "WebsocketsApi", '.execute-api.', "${self:provider.region}", '.', !Ref "AWS::URLSuffix", '/', "${self:provider.stage}" ] ]
 ```
 
-Next, create the PHP handler file in `handlers/websocker.php`
+Next, create the PHP handler file in `handlers/websocket.php`
 
 ```php
 <?php

@@ -1,7 +1,7 @@
 import {EventFormatter} from 'laravel-echo/src/util';
 import {Channel} from 'laravel-echo/src/channel/channel';
 import {PresenceChannel} from "laravel-echo/src/channel";
-import {OurConnector} from "./OurWebsocket";
+import {LaravelEchoApiGatewayWebsocket} from "./LaravelEchoApiGatewayWebsocket";
 
 /**
  * This class represents a Pusher channel.
@@ -10,7 +10,7 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * The Pusher client instance.
      */
-    socket: OurConnector;
+    socket: LaravelEchoApiGatewayWebsocket;
 
     /**
      * The name of the channel.
@@ -32,7 +32,7 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Create a new class instance.
      */
-    constructor(socket: OurConnector, name: any, options: any) {
+    constructor(socket: LaravelEchoApiGatewayWebsocket, name: any, options: any) {
         super();
 
         this.name = name;
