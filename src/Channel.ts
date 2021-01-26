@@ -1,26 +1,26 @@
 import {EventFormatter} from 'laravel-echo/src/util';
-import {Channel} from 'laravel-echo/src/channel/channel';
+import {Channel as BaseChannel} from 'laravel-echo/src/channel/channel';
 import {PresenceChannel} from "laravel-echo/src/channel";
-import {LaravelEchoApiGatewayWebsocket} from "./LaravelEchoApiGatewayWebsocket";
+import {Websocket} from "./Websocket";
 
 /**
  * This class represents a Pusher channel.
  */
-export class ApiGatewayChannel extends Channel implements PresenceChannel {
+export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * The Pusher client instance.
      */
-    socket: LaravelEchoApiGatewayWebsocket;
+    socket: Websocket;
 
     /**
      * The name of the channel.
      */
-    name: any;
+    name: string;
 
     /**
      * Channel options.
      */
-    options: any;
+    options: object;
 
     /**
      * The event formatter.
@@ -32,13 +32,13 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Create a new class instance.
      */
-    constructor(socket: LaravelEchoApiGatewayWebsocket, name: any, options: any) {
+    constructor(socket: Websocket, name: string, options: object) {
         super();
 
         this.name = name;
         this.socket = socket;
         this.options = options;
-        this.eventFormatter = new EventFormatter(this.options.namespace);
+        this.eventFormatter = new EventFormatter(this.options["namespace"]);
 
         this.subscribe();
     }
@@ -54,13 +54,13 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
      * Unsubscribe from a Pusher channel.
      */
     unsubscribe(): void {
-        this.socket.unsubscribe(this.name);
+        this.socket.unsubscribe(this);
     }
 
     /**
      * Listen for an event on the channel instance.
      */
-    listen(event: string, callback: Function): ApiGatewayChannel {
+    listen(event: string, callback: Function): Channel {
         this.on(this.eventFormatter.format(event), callback);
 
         return this;
@@ -69,7 +69,7 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Stop listening for an event on the channel instance.
      */
-    stopListening(event: string, callback?: Function): ApiGatewayChannel {
+    stopListening(event: string, callback?: Function): Channel {
         if (this.listeners[event] && (!callback || this.listeners[event] === callback)) {
             delete this.listeners[event]
         }
@@ -80,7 +80,7 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Register a callback to be called anytime a subscription succeeds.
      */
-    subscribed(callback: Function): ApiGatewayChannel {
+    subscribed(callback: Function): Channel {
         this.on('subscription_succeeded', () => {
             callback();
         });
@@ -91,7 +91,7 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Register a callback to be called anytime a subscription error occurs.
      */
-    error(callback: Function): ApiGatewayChannel {
+    error(callback: Function): Channel {
         this.on('error', (status) => {
             callback(status);
         });
@@ -102,19 +102,19 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
     /**
      * Bind a channel to an event.
      */
-    on(event: string, callback: Function): ApiGatewayChannel {
+    on(event: string, callback: Function): Channel {
         this.listeners[event] = callback
 
         return this;
     }
 
-    handleEvent(event: string, data: object) {
+    handleEvent(event: string, data: object): void {
         if (this.listeners[event]) {
             this.listeners[event](event, data)
         }
     }
 
-    whisper(event: string, data: object): ApiGatewayChannel {
+    whisper(event: string, data: object): Channel {
         this.socket.send({
             event,
             data,
@@ -123,21 +123,27 @@ export class ApiGatewayChannel extends Channel implements PresenceChannel {
         return this;
     }
 
-    here(callback: Function): ApiGatewayChannel {
+    here(callback: Function): Channel {
+        // TODO: implement
+
         return this
     }
 
     /**
      * Listen for someone joining the channel.
      */
-    joining(callback: Function): ApiGatewayChannel {
+    joining(callback: Function): Channel {
+        // TODO: implement
+
         return this
     }
 
     /**
      * Listen for someone leaving the channel.
      */
-    leaving(callback: Function): ApiGatewayChannel {
+    leaving(callback: Function): Channel {
+        // TODO: implement
+
         return this
     }
 }

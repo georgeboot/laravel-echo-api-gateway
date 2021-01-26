@@ -1,25 +1,25 @@
-import {Connector} from "laravel-echo/src/connector/connector";
-import {LaravelEchoApiGatewayWebsocket} from "./LaravelEchoApiGatewayWebsocket";
-import {ApiGatewayChannel} from "./ApiGatewayChannel";
+import {Connector as BaseConnector} from "laravel-echo/src/connector/connector";
+import {Websocket} from "./Websocket";
+import {Channel} from "./Channel";
 
-export const broadcaster = options => new LaravelEchoApiGatewayConnector(options);
+export const broadcaster = (options: object): Connector => new Connector(options);
 
-export class LaravelEchoApiGatewayConnector extends Connector {
+export class Connector extends BaseConnector {
     /**
      * The Socket.io connection instance.
      */
-    socket: LaravelEchoApiGatewayWebsocket;
+    socket: Websocket;
 
     /**
      * All of the subscribed channel names.
      */
-    channels: { [name: string]: ApiGatewayChannel } = {};
+    channels: { [name: string]: Channel } = {};
 
     /**
      * Create a fresh Socket.io connection.
      */
     connect(): void {
-        this.socket = new LaravelEchoApiGatewayWebsocket(this.options);
+        this.socket = new Websocket(this.options);
 
         return null;
 
@@ -36,9 +36,9 @@ export class LaravelEchoApiGatewayConnector extends Connector {
     /**
      * Get a channel instance by name.
      */
-    channel(name: string): ApiGatewayChannel {
+    channel(name: string): Channel {
         if (!this.channels[name]) {
-            this.channels[name] = new ApiGatewayChannel(this.socket, name, this.options);
+            this.channels[name] = new Channel(this.socket, name, this.options);
         }
 
         return this.channels[name];
@@ -47,27 +47,27 @@ export class LaravelEchoApiGatewayConnector extends Connector {
     /**
      * Get a private channel instance by name.
      */
-    privateChannel(name: string): ApiGatewayChannel {
+    privateChannel(name: string): Channel {
         if (!this.channels['private-' + name]) {
-            this.channels['private-' + name] = new ApiGatewayChannel(this.socket, 'private-' + name, this.options);
+            this.channels['private-' + name] = new Channel(this.socket, 'private-' + name, this.options);
         }
 
-        return this.channels['private-' + name] as ApiGatewayChannel;
+        return this.channels['private-' + name] as Channel;
     }
 
     /**
      * Get a presence channel instance by name.
      */
-    presenceChannel(name: string): ApiGatewayChannel {
+    presenceChannel(name: string): Channel {
         if (!this.channels['presence-' + name]) {
-            this.channels['presence-' + name] = new ApiGatewayChannel(
+            this.channels['presence-' + name] = new Channel(
                 this.socket,
                 'presence-' + name,
                 this.options
             );
         }
 
-        return this.channels['presence-' + name] as ApiGatewayChannel;
+        return this.channels['presence-' + name] as Channel;
     }
 
     /**

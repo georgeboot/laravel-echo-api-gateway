@@ -18,14 +18,14 @@
         "name": "George Boot"
     },
     "license": "MIT",
-    "main": "dist/laravel-echo-api-gateway-connector.common.js",
-    "module": "dist/laravel-echo-api-gateway-connector.js",
-    "types": "dist/laravel-echo-api-gateway-connector.d.ts",
+    "main": "dist/laravel-echo-api-gateway.common.js",
+    "module": "dist/laravel-echo-api-gateway.js",
+    "types": "dist/laravel-echo-api-gateway.d.ts",
     "scripts": {
         "build": "npm run compile && npm run declarations",
         "compile": "./node_modules/.bin/rollup -c",
         "declarations": "./node_modules/.bin/tsc --emitDeclarationOnly",
-        "lint": "eslint --ext .js,.ts ./src ./tests",
+        "lint": "eslint --ext .js,.ts ./src",
         "prepublish": "npm run build",
         "release": "npm run test && standard-version && git push --follow-tags && npm publish",
         "test": "jest"

@@ -1,10 +1,10 @@
-import {ApiGatewayChannel} from "./ApiGatewayChannel";
+import {Channel} from "./Channel";
 import {AxiosResponse} from "axios";
 
 export type Options = { authEndpoint: string, host: string };
 export type MessageBody = { event: string, channel?: string, data: object };
 
-export class LaravelEchoApiGatewayWebsocket {
+export class Websocket {
     buffer: Array<object> = [];
 
     options: Options;
@@ -15,7 +15,7 @@ export class LaravelEchoApiGatewayWebsocket {
 
     private channelBacklog = [];
 
-    private channels: { [index: string]: ApiGatewayChannel } = {};
+    private channels: { [index: string]: Channel } = {};
 
     private socketId: string;
 
@@ -124,7 +124,7 @@ export class LaravelEchoApiGatewayWebsocket {
         this.websocket.close()
     }
 
-    subscribe(channel: ApiGatewayChannel): void {
+    subscribe(channel: Channel): void {
         if (this.getSocketId()) {
             this.actuallySubscribe(channel)
         } else {
@@ -132,7 +132,7 @@ export class LaravelEchoApiGatewayWebsocket {
         }
     }
 
-    private actuallySubscribe(channel: ApiGatewayChannel): void {
+    private actuallySubscribe(channel: Channel): void {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
             console.log(`Sending auth request for channel ${channel.name}`)
 
@@ -153,6 +153,7 @@ export class LaravelEchoApiGatewayWebsocket {
                 this.channels[channel.name] = channel
             }).catch((error) => {
                 console.log(`Auth request for channel ${channel.name} failed`)
+                console.error(error)
             })
         } else {
             console.log(`Subscribing to channels ${channel.name}`)
@@ -168,7 +169,7 @@ export class LaravelEchoApiGatewayWebsocket {
         }
     }
 
-    unsubscribe(channel: ApiGatewayChannel): void {
+    unsubscribe(channel: Channel): void {
         this.send({
             event: 'unsubscribe',
             data: {

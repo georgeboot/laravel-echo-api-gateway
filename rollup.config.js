@@ -2,11 +2,11 @@ import babel from '@rollup/plugin-babel';
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
-    input: './src/LaravelEchoApiGatewayConnector.ts',
+    input: './src/Connector.ts',
     output: [
-        { file: './dist/laravel-echo-api-gateway-connector.js', format: 'esm' },
-        { file: './dist/laravel-echo-api-gateway-connector.common.js', format: 'cjs' },
-        { file: './dist/laravel-echo-api-gateway-connector.iife.js', format: 'iife', name: 'LaravelEchoApiGatewayConnector' },
+        { file: './dist/laravel-echo-api-gateway.js', format: 'esm' },
+        { file: './dist/laravel-echo-api-gateway.common.js', format: 'cjs' },
+        { file: './dist/laravel-echo-api-gateway.iife.js', format: 'iife', name: 'LaravelEchoApiGateway' },
     ],
     plugins: [
         typescript(),
