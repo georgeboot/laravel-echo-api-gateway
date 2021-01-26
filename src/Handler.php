@@ -24,13 +24,13 @@ class Handler extends WebsocketHandler
     public function handleWebsocket(WebsocketEvent $event, Context $context): HttpResponse
     {
         try {
-            switch ($event->getEventType()) {
-                case 'DISCONNECT':
-                    return $this->handleDisconnect($event, $context);
+            $method = Str::camel('handle_' . Str::lower($event->getEventType()));
 
-                default:
-                    return $this->handleMessage($event, $context);
+            if (! method_exists($this, $method)) {
+                throw new \InvalidArgumentException("Event type {$event->getEventType()} has no handler implemented.");
             }
+
+            return $this->$method($event, $context);
         } catch (Throwable $throwable) {
             $this->exceptionHandler->report($throwable);
 
@@ -58,7 +58,7 @@ class Handler extends WebsocketHandler
         if ($eventType === 'ping') {
             return $this->jsonResponse([
                 'event' => 'pong',
-                'channel' => 'test',
+                'channel' => $eventBody['channel'] ?? null,
             ]);
         }
 
@@ -72,11 +72,11 @@ class Handler extends WebsocketHandler
         }
 
         if ($eventType === 'subscribe') {
-            return $this->unsubscribe($event, $context);
+            return $this->subscribe($event, $context);
         }
 
         if ($eventType === 'unsubscribe') {
-            return $this->subscribe($event, $context);
+            return $this->unsubscribe($event, $context);
         }
 
 
@@ -88,6 +88,10 @@ class Handler extends WebsocketHandler
     protected function subscribe(WebsocketEvent $event, Context $context): HttpResponse
     {
         $eventBody = json_decode($event->getBody(), true);
+
+        // fill missing values
+        $eventBody['data'] += ['auth' => null, 'channel_data' => []];
+
         [
             'channel' => $channel,
             'auth' => $auth,

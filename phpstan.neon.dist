@@ -4,7 +4,8 @@ includes:
 parameters:
 
     paths:
-        - php-src
+        - src
+        - tests
 
     level: max
 

@@ -18,6 +18,6 @@
   },
   "include": [
     "./typings/*.ts",
-    "./src/*.ts"
+    "./js-src/*.ts"
   ]
 }

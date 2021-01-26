@@ -2,7 +2,7 @@ import babel from '@rollup/plugin-babel';
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
-    input: './src/Connector.ts',
+    input: './js-src/Connector.ts',
     output: [
         { file: './dist/laravel-echo-api-gateway.js', format: 'esm' },
         { file: './dist/laravel-echo-api-gateway.common.js', format: 'cjs' },

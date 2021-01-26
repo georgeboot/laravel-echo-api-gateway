@@ -10,7 +10,7 @@ return [
         'endpoint' => env('DYNAMODB_ENDPOINT'),
     ],
 
-    'table' => 'my-test-table',
+    'table' => env('LARAVEL_ECHO_API_GATEWAY_TABLE', 'connections'),
 
     'endpoint' => env('BROADCAST_API_GATEWAY_URL'),
 
