@@ -56,19 +56,19 @@ class Handler extends WebsocketHandler
         $eventType = $eventBody['event'];
 
         if ($eventType === 'ping') {
-            return new HttpResponse(json_encode([
+            return $this->jsonResponse([
                 'event' => 'pong',
                 'channel' => 'test',
-            ]));
+            ]);
         }
 
         if ($eventType === 'whoami') {
-            return new HttpResponse(json_encode([
+            return $this->jsonResponse([
                 'event' => 'whoami',
                 'data' => [
                     'socket_id' => $event->getConnectionId(),
                 ],
-            ]));
+            ]);
         }
 
         if ($eventType === 'subscribe') {
@@ -80,9 +80,9 @@ class Handler extends WebsocketHandler
         }
 
 
-        return new HttpResponse(json_encode([
+        return $this->jsonResponse([
             'event' => 'error',
-        ]));
+        ]);
     }
 
     protected function subscribe(WebsocketEvent $event, Context $context): HttpResponse
@@ -104,23 +104,23 @@ class Handler extends WebsocketHandler
             $signature = hash_hmac('sha256', $data, config('app.key'), false);
 
             if ($signature !== $auth) {
-                return new HttpResponse(json_encode([
+                return $this->jsonResponse([
                     'event' => 'error',
                     'channel' => $channel,
                     'data' => [
                         'message' => 'Invalid auth signature',
                     ],
-                ]));
+                ]);
             }
         }
 
         $this->connectionRepository->subscribeToChannel($event->getConnectionId(), $channel);
 
-        return new HttpResponse(json_encode([
+        return $this->jsonResponse([
             'event' => 'subscription_succeeded',
             'channel' => $channel,
             'data' => [],
-        ]));
+        ]);
     }
 
     protected function unsubscribe(WebsocketEvent $event, Context $context): HttpResponse
@@ -130,10 +130,15 @@ class Handler extends WebsocketHandler
 
         $this->connectionRepository->unsubscribeFromChannel($event->getConnectionId(), $channel);
 
-        return new HttpResponse(json_encode([
+        return $this->jsonResponse([
             'event' => 'unsubscription_succeeded',
             'channel' => $channel,
             'data' => [],
-        ]));
+        ]);
+    }
+
+    protected function jsonResponse(array $data): HttpResponse
+    {
+        return new HttpResponse(json_encode($data, JSON_THROW_ON_ERROR));
     }
 }

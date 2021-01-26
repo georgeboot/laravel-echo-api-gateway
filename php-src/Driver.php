@@ -78,7 +78,7 @@ class Driver extends Broadcaster
         return $response;
     }
 
-    protected function generateSignaturePresence(string $channel, string $socketId, int $userId, $userInfo = null): array
+    protected function generateSignaturePresence(string $channel, string $socketId, int $userId, array $userInfo = null): array
     {
         $userData = [
             'user_id' => $userId,
@@ -88,7 +88,7 @@ class Driver extends Broadcaster
             $userData['user_info'] = $userInfo;
         }
 
-        return $this->generateSignature($channel, $socketId, json_encode($userData));
+        return $this->generateSignature($channel, $socketId, json_encode($userData, JSON_THROW_ON_ERROR));
     }
 
     /**
@@ -106,7 +106,7 @@ class Driver extends Broadcaster
         $data = json_encode([
             'event' => $event,
             'data' => $payload,
-        ]);
+        ], JSON_THROW_ON_ERROR);
 
         dispatch(new QueueMessageToChannels(
             $channels,

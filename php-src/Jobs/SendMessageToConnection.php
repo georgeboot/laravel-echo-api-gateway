@@ -26,7 +26,7 @@ class SendMessageToConnection implements ShouldQueue
         $this->data = $data;
     }
 
-    public function handle(ConnectionRepository $connectionRepository)
+    public function handle(ConnectionRepository $connectionRepository): void
     {
         try {
             $connectionRepository->sendMessage($this->connectionId, $this->data);

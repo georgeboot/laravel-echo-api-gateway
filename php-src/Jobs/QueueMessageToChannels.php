@@ -27,10 +27,12 @@ class QueueMessageToChannels implements ShouldQueue
         $this->skipConnectionId = $skipConnectionId;
     }
 
-    public function handle(SubscriptionRepository $connectionRepository)
+    public function handle(SubscriptionRepository $connectionRepository): void
     {
-        $connectionRepository->getConnectionIdsForChannels($this->channels)
+        $connectionRepository->getConnectionIdsForChannels(...$this->channels)
             ->reject(fn($connectionId) => $connectionId === $this->skipConnectionId)
-            ->each(fn($connectionId) => dispatch(new SendMessageToConnection($connectionId, $this->data)));
+            ->each(function (string $connectionId): void {
+                dispatch(new SendMessageToConnection($connectionId, $this->data));
+            });
     }
 }
