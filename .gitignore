@@ -4,3 +4,6 @@ build/
 npm-debug.log
 package-lock.json
 vendor/
+.idea/
+.phpunit.result.cache
+yarn-error.log

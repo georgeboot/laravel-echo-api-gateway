@@ -1,1 +1,8 @@
 build/
+config/
+src/
+tests/
+vendor/
+.idea/
+.phpunit.result.cache
+yarn-error.log
