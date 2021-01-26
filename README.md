@@ -29,9 +29,9 @@ First we have to install both the composer and npm package:
 ```shell
 composer require georgeboot/laravel-echo-api-gateway
 
-yarn add georgeboot/laravel-echo-api-gateway
+yarn add laravel-echo-api-gateway
 # or
-npn install --save georgeboot/laravel-echo-api-gateway
+npn install --save laravel-echo-api-gateway
 ```
 
 Next, we have to add some elements to our `serverless.yml` file.

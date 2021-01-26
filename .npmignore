@@ -6,3 +6,5 @@ vendor/
 .idea/
 .phpunit.result.cache
 yarn-error.log
+composer.json
+composer.lock
