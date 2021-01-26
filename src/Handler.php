@@ -24,7 +24,7 @@ class Handler extends WebsocketHandler
     public function handleWebsocket(WebsocketEvent $event, Context $context): HttpResponse
     {
         try {
-            $method = Str::camel('handle_' . Str::lower($event->getEventType()));
+            $method = Str::camel('handle_' . Str::lower($event->getEventType() ?? ''));
 
             if (! method_exists($this, $method)) {
                 throw new \InvalidArgumentException("Event type {$event->getEventType()} has no handler implemented.");

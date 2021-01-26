@@ -34,12 +34,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Georgeboot\\LaravelEchoApiGateway\\": "js-src"
+            "Georgeboot\\LaravelEchoApiGateway\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Georgeboot\\LaravelEchoApiGateway\\Tests\\": "tests"
+            "Tests\\": "tests/"
         }
     },
     "scripts": {
