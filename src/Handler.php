@@ -13,11 +13,13 @@ use Throwable;
 class Handler extends WebsocketHandler
 {
     protected ExceptionHandler $exceptionHandler;
-    protected SubscriptionRepository $connectionRepository;
+    protected SubscriptionRepository $subscriptionRepository;
+    protected ConnectionRepository $connectionRepository;
 
-    public function __construct(ExceptionHandler $exceptionHandler, SubscriptionRepository $connectionRepository)
+    public function __construct(ExceptionHandler $exceptionHandler, SubscriptionRepository $subscriptionRepository, ConnectionRepository $connectionRepository)
     {
         $this->exceptionHandler = $exceptionHandler;
+        $this->subscriptionRepository = $subscriptionRepository;
         $this->connectionRepository = $connectionRepository;
     }
 
@@ -30,7 +32,9 @@ class Handler extends WebsocketHandler
                 throw new \InvalidArgumentException("Event type {$event->getEventType()} has no handler implemented.");
             }
 
-            return $this->$method($event, $context);
+            $this->$method($event, $context);
+
+            return new HttpResponse('OK');
         } catch (Throwable $throwable) {
             $this->exceptionHandler->report($throwable);
 
@@ -38,14 +42,12 @@ class Handler extends WebsocketHandler
         }
     }
 
-    protected function handleDisconnect(WebsocketEvent $event, Context $context): HttpResponse
+    protected function handleDisconnect(WebsocketEvent $event, Context $context): void
     {
-        $this->connectionRepository->clearConnection($event->getConnectionId());
-
-        return new HttpResponse('OK');
+        $this->subscriptionRepository->clearConnection($event->getConnectionId());
     }
 
-    protected function handleMessage(WebsocketEvent $event, Context $context): HttpResponse
+    protected function handleMessage(WebsocketEvent $event, Context $context): void
     {
         $eventBody = json_decode($event->getBody(), true);
 
@@ -56,36 +58,29 @@ class Handler extends WebsocketHandler
         $eventType = $eventBody['event'];
 
         if ($eventType === 'ping') {
-            return $this->jsonResponse([
+            $this->sendMessage($event, $context, [
                 'event' => 'pong',
                 'channel' => $eventBody['channel'] ?? null,
             ]);
-        }
-
-        if ($eventType === 'whoami') {
-            return $this->jsonResponse([
+        } elseif ($eventType === 'whoami') {
+            $this->sendMessage($event, $context, [
                 'event' => 'whoami',
                 'data' => [
                     'socket_id' => $event->getConnectionId(),
                 ],
             ]);
+        } elseif ($eventType === 'subscribe') {
+            $this->subscribe($event, $context);
+        } elseif ($eventType === 'unsubscribe') {
+            $this->unsubscribe($event, $context);
+        } else {
+            $this->sendMessage($event, $context, [
+                'event' => 'error',
+            ]);
         }
-
-        if ($eventType === 'subscribe') {
-            return $this->subscribe($event, $context);
-        }
-
-        if ($eventType === 'unsubscribe') {
-            return $this->unsubscribe($event, $context);
-        }
-
-
-        return $this->jsonResponse([
-            'event' => 'error',
-        ]);
     }
 
-    protected function subscribe(WebsocketEvent $event, Context $context): HttpResponse
+    protected function subscribe(WebsocketEvent $event, Context $context): void
     {
         $eventBody = json_decode($event->getBody(), true);
 
@@ -108,41 +103,43 @@ class Handler extends WebsocketHandler
             $signature = hash_hmac('sha256', $data, config('app.key'), false);
 
             if ($signature !== $auth) {
-                return $this->jsonResponse([
+                $this->sendMessage($event, $context, [
                     'event' => 'error',
                     'channel' => $channel,
                     'data' => [
                         'message' => 'Invalid auth signature',
                     ],
                 ]);
+
+                return;
             }
         }
 
-        $this->connectionRepository->subscribeToChannel($event->getConnectionId(), $channel);
+        $this->subscriptionRepository->subscribeToChannel($event->getConnectionId(), $channel);
 
-        return $this->jsonResponse([
+        $this->sendMessage($event, $context, [
             'event' => 'subscription_succeeded',
             'channel' => $channel,
             'data' => [],
         ]);
     }
 
-    protected function unsubscribe(WebsocketEvent $event, Context $context): HttpResponse
+    protected function unsubscribe(WebsocketEvent $event, Context $context): void
     {
         $eventBody = json_decode($event->getBody(), true);
         $channel = $eventBody['data']['channel'];
 
-        $this->connectionRepository->unsubscribeFromChannel($event->getConnectionId(), $channel);
+        $this->subscriptionRepository->unsubscribeFromChannel($event->getConnectionId(), $channel);
 
-        return $this->jsonResponse([
+        $this->sendMessage($event, $context, [
             'event' => 'unsubscription_succeeded',
             'channel' => $channel,
             'data' => [],
         ]);
     }
 
-    protected function jsonResponse(array $data): HttpResponse
+    public function sendMessage(WebsocketEvent $event, Context $context, array $data): void
     {
-        return new HttpResponse(json_encode($data, JSON_THROW_ON_ERROR));
+        $this->connectionRepository->sendMessage($event->getConnectionId(), json_encode($data, JSON_THROW_ON_ERROR));
     }
 }

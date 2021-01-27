@@ -2,6 +2,7 @@
 
 namespace Georgeboot\LaravelEchoApiGateway;
 
+use Georgeboot\LaravelEchoApiGateway\Commands\VaporHandle;
 use Illuminate\Broadcasting\Broadcasters\Broadcaster;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Support\Facades\Config;
@@ -36,6 +37,10 @@ class ServiceProvider extends LaravelServiceProvider
                 config('laravel-echo-api-gateway')
             );
         });
+
+        $this->commands([
+            VaporHandle::class,
+        ]);
     }
 
     public function boot(BroadcastManager $broadcastManager): void
