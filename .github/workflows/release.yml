@@ -21,11 +21,13 @@ jobs:
       - run: git config --global user.name "GitHub CD bot"
       - run: git config --global user.email "github-cd-bot@github.com"
       - run: yarn version --new-version ${{ github.event.release.tag_name }} --no-git-tag-version
-      - run: yarn run build
+      #      - run: yarn run build
       #      - run: yarn test
       - run: yarn publish --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: git add package.json
+      - run: git commit -m 'Bump version'
       - run: git push
         env:
           github-token: ${{ secrets.GITHUB_TOKEN }}
