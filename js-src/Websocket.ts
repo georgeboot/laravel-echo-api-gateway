@@ -11,11 +11,11 @@ export class Websocket {
 
     websocket: WebSocket;
 
-    private internalListeners: { [index: string]: Function } = {};
+    private listeners: { [channelName: string]: { [eventName: string]: Function } }
+
+    private internalListeners: { [eventName: string]: Function } = {};
 
     private channelBacklog = [];
-
-    private channels: { [index: string]: Channel } = {};
 
     private socketId: string;
 
@@ -46,8 +46,8 @@ export class Websocket {
             if (message.channel) {
                 console.log(`Received event ${message.event} on channel ${message.channel}`)
 
-                if (this.channels[message.channel]) {
-                    this.channels[message.channel].handleEvent(message.event, message.data)
+                if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
+                    this.listeners[message.channel][message.event](message.data)
                 }
 
                 return
@@ -76,14 +76,14 @@ export class Websocket {
             event: 'whoami',
         })
 
-        // send ping every 10 seconds to keep connection alive
+        // send ping every 60 seconds to keep connection alive
         this.pingInterval = setInterval(() => {
             console.log('Sending ping')
 
             this.send({
                 event: 'ping',
             })
-        }, 10 * 1000)
+        }, 60 * 1000)
 
         return this
     }
@@ -149,8 +149,6 @@ export class Websocket {
                         auth: response.data.auth,
                     },
                 })
-
-                this.channels[channel.name] = channel
             }).catch((error) => {
                 console.log(`Auth request for channel ${channel.name} failed`)
                 console.error(error)
@@ -164,8 +162,6 @@ export class Websocket {
                     channel: channel.name,
                 },
             })
-
-            this.channels[channel.name] = channel
         }
     }
 
@@ -176,15 +172,21 @@ export class Websocket {
                 channel: channel.name,
             },
         })
-
-        delete this.channels[channel.name]
     }
 
     on(event: string, callback: Function = null): void {
         this.internalListeners[event] = callback
     }
 
-    unbindEvent(event: string, callback: Function = null): void {
+    bind(channel: Channel, event: string, callback: Function): void {
+        if (!this.listeners[channel.name]) {
+            this.listeners[channel.name] = {}
+        }
+
+        this.listeners[channel.name][event] = callback
+    }
+
+    unbindEvent(channel: Channel, event: string, callback: Function = null): void {
         if (this.internalListeners[event] && (callback === null || this.internalListeners[event] === callback)) {
             delete this.internalListeners[event]
         }

@@ -70,9 +70,7 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Stop listening for an event on the channel instance.
      */
     stopListening(event: string, callback?: Function): Channel {
-        if (this.listeners[event] && (!callback || this.listeners[event] === callback)) {
-            delete this.listeners[event]
-        }
+        this.socket.unbindEvent(this, event, callback)
 
         return this;
     }
@@ -103,15 +101,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Bind a channel to an event.
      */
     on(event: string, callback: Function): Channel {
-        this.listeners[event] = callback
+        this.socket.bind(this, event, callback)
 
         return this;
-    }
-
-    handleEvent(event: string, data: object): void {
-        if (this.listeners[event]) {
-            this.listeners[event](event, data)
-        }
     }
 
     whisper(event: string, data: object): Channel {
