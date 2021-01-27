@@ -13,7 +13,7 @@ class ConnectionRepository
     {
         $this->apiGatewayManagementApiClient = new ApiGatewayManagementApiClient(array_merge($config['connection'], [
             'version' => '2018-11-29',
-            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']),
+            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']) . '/',
         ]));
     }
 
