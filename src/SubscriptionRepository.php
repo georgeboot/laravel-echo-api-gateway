@@ -51,15 +51,17 @@ class SubscriptionRepository
             ],
         ]);
 
-        $this->dynamoDb->batchWriteItem([
-            'RequestItems' => [
-                $this->table => collect($response['Items'])->map(fn($item) => [
-                    'DeleteRequest' => [
-                        'Key' => Arr::only($item, ['connectionId', 'channel']),
-                    ],
-                ])->toArray(),
-            ],
-        ]);
+        if (! empty($response['Items'])) {
+            $this->dynamoDb->batchWriteItem([
+                'RequestItems' => [
+                    $this->table => collect($response['Items'])->map(fn($item) => [
+                        'DeleteRequest' => [
+                            'Key' => Arr::only($item, ['connectionId', 'channel']),
+                        ],
+                    ])->toArray(),
+                ],
+            ]);
+        }
     }
 
     public function subscribeToChannel(string $connectionId, string $channel): void
