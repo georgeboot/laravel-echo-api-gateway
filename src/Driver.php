@@ -139,6 +139,8 @@ class Driver extends Broadcaster
 
     protected function sendMessage(string $connectionId, string $data): void
     {
+        logger()->debug("Sending message to connection '{$connectionId}'");
+
         try {
             $this->connectionRepository->sendMessage($connectionId, $data);
         } catch (ApiGatewayManagementApiException $exception) {
