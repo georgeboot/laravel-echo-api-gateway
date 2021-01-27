@@ -5,6 +5,7 @@ namespace Georgeboot\LaravelEchoApiGateway;
 use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
 use Illuminate\Broadcasting\Broadcasters\Broadcaster;
 use Illuminate\Broadcasting\Broadcasters\UsePusherChannelConventions;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -103,9 +104,9 @@ class Driver extends Broadcaster
     /**
      * Broadcast the given event.
      *
-     * @param  array  $channels
-     * @param  string  $event
-     * @param  array  $payload
+     * @param Channel[] $channels
+     * @param string $event
+     * @param array $payload
      * @return void
      *
      * @throws \Illuminate\Broadcasting\BroadcastException
@@ -117,13 +118,13 @@ class Driver extends Broadcaster
         foreach ($channels as $channel) {
             $data = json_encode([
                 'event' => $event,
-                'channel' => $channel,
+                'channel' => $channel->name,
                 'data' => $payload,
             ], JSON_THROW_ON_ERROR);
 
             $this->subscriptionRepository->getConnectionIdsForChannel($channel)
                 ->reject(fn($connectionId) => $connectionId === $skipConnectionId)
-                ->tap(fn($connectionIds) => logger()->debug("Preparing to send to connections for channel '{$channel}'", $connectionIds->toArray()))
+                ->tap(fn($connectionIds) => logger()->debug("Preparing to send to connections for channel '{$channel->name}'", $connectionIds->toArray()))
                 ->each(fn(string $connectionId) => $this->sendMessage($connectionId, $data));
         }
 
