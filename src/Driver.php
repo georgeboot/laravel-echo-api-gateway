@@ -121,6 +121,7 @@ class Driver extends Broadcaster
 
         $this->subscriptionRepository->getConnectionIdsForChannels(...$channels)
             ->reject(fn($connectionId) => $connectionId === $skipConnectionId)
+            ->tap(fn($collection) => logger()->debug("Preparing to send to connections", $collection->toArray()))
             ->each(fn(string $connectionId) => $this->sendMessage($connectionId, $data));
 
         return;
@@ -139,6 +140,8 @@ class Driver extends Broadcaster
 
     protected function sendMessage(string $connectionId, string $data): void
     {
+        logger()->debug("Sending message to connection '{$connectionId}'");
+
         try {
             $this->connectionRepository->sendMessage($connectionId, $data);
         } catch (ApiGatewayManagementApiException $exception) {
