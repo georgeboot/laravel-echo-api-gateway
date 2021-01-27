@@ -16,7 +16,7 @@ In order to use this package, your project needs to meet the following criteria:
 
 - PHP 7.4 or 8.x
 - Laravel 6, 7 or 8
-- Uses [bref](https://bref.sh) to deploy to AWS
+- Uses either [bref](https://bref.sh) or [Laravel Vapor](https://vapor.laravel.com) to deploy to AWS
 - Has a working queue
 - Uses Laravel Mix or any other tool to bundle your assets
 
@@ -34,7 +34,8 @@ yarn add laravel-echo-api-gateway
 npn install --save laravel-echo-api-gateway
 ```
 
-Next, we have to add some elements to our `serverless.yml` file.
+Next, when using Bref, we have to add some elements to our `serverless.yml` file. If using Vapor, these resources have
+to be created by hand using the AWS CLI or console.
 
 Add a new function that will handle websocket events (messages etc):
 

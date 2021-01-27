@@ -6,7 +6,8 @@
         "echo",
         "websockets",
         "bref",
-        "serverless"
+        "serverless",
+        "laravel vapor"
     ],
     "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
     "type": "library",
