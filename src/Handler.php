@@ -6,19 +6,16 @@ use Bref\Context\Context;
 use Bref\Event\ApiGateway\WebsocketEvent;
 use Bref\Event\ApiGateway\WebsocketHandler;
 use Bref\Event\Http\HttpResponse;
-use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\Str;
 use Throwable;
 
 class Handler extends WebsocketHandler
 {
-    protected ExceptionHandler $exceptionHandler;
     protected SubscriptionRepository $subscriptionRepository;
     protected ConnectionRepository $connectionRepository;
 
-    public function __construct(ExceptionHandler $exceptionHandler, SubscriptionRepository $subscriptionRepository, ConnectionRepository $connectionRepository)
+    public function __construct(SubscriptionRepository $subscriptionRepository, ConnectionRepository $connectionRepository)
     {
-        $this->exceptionHandler = $exceptionHandler;
         $this->subscriptionRepository = $subscriptionRepository;
         $this->connectionRepository = $connectionRepository;
     }
@@ -41,8 +38,7 @@ class Handler extends WebsocketHandler
                 app('sentry')->captureException($throwable);
             }
 
-
-            $this->exceptionHandler->report($throwable);
+            report($throwable);
 
             throw $throwable;
         }

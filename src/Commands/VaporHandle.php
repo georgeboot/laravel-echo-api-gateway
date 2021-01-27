@@ -67,7 +67,10 @@ class VaporHandle extends Command
      */
     protected function message()
     {
-        return tap(json_decode(base64_decode($this->argument('message')), true), function ($message) {
+        /** @var string $message */
+        $message = $this->argument('message');
+
+        return tap(json_decode(base64_decode($message), true), function ($message) {
             if ($message === false) {
                 throw new InvalidArgumentException('Unable to unserialize message.');
             }

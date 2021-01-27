@@ -2,7 +2,7 @@
 
 namespace Georgeboot\LaravelEchoApiGateway;
 
-use Georgeboot\LaravelEchoApiGateway\Jobs\QueueMessageToChannels;
+use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
 use Illuminate\Broadcasting\Broadcasters\Broadcaster;
 use Illuminate\Broadcasting\Broadcasters\UsePusherChannelConventions;
 use Illuminate\Support\Arr;
@@ -12,6 +12,15 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class Driver extends Broadcaster
 {
     use UsePusherChannelConventions;
+
+    protected SubscriptionRepository $subscriptionRepository;
+    protected ConnectionRepository $connectionRepository;
+
+    public function __construct(SubscriptionRepository $subscriptionRepository, ConnectionRepository $connectionRepository)
+    {
+        $this->subscriptionRepository = $subscriptionRepository;
+        $this->connectionRepository = $connectionRepository;
+    }
 
     /**
      * Authenticate the incoming request for a given channel.
@@ -108,11 +117,11 @@ class Driver extends Broadcaster
             'data' => $payload,
         ], JSON_THROW_ON_ERROR);
 
-        dispatch(new QueueMessageToChannels(
-            $channels,
-            $data,
-            Arr::pull($payload, 'socket')
-        ));
+        $skipConnectionId = Arr::pull($payload, 'socket');
+
+        $this->subscriptionRepository->getConnectionIdsForChannels(...$channels)
+            ->reject(fn($connectionId) => $connectionId === $skipConnectionId)
+            ->each(fn(string $connectionId) => $this->sendMessage($connectionId, $data));
 
         return;
 
@@ -126,5 +135,27 @@ class Driver extends Broadcaster
         //         ? sprintf('Pusher error: %s.', $response['body'])
         //         : 'Failed to connect to Pusher.'
         // );
+    }
+
+    protected function sendMessage(string $connectionId, string $data): void
+    {
+        try {
+            $this->connectionRepository->sendMessage($connectionId, $data);
+        } catch (ApiGatewayManagementApiException $exception) {
+            if ($exception->getAwsErrorCode() === 'GoneException') {
+                $this->subscriptionRepository->clearConnection($connectionId);
+                return;
+            }
+
+            throw $exception;
+
+            // $exception->getErrorCode() is one of:
+            // GoneException
+            // LimitExceededException
+            // PayloadTooLargeException
+            // ForbiddenException
+
+            // otherwise: call $exception->getPrevious() which is a guzzle exception
+        }
     }
 }
