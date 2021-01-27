@@ -52,11 +52,13 @@ class SubscriptionRepository
         ]);
 
         $this->dynamoDb->batchWriteItem([
-            $this->table => collect($response['Items'])->map(fn($item) => [
-                'DeleteRequest' => [
-                    'Key' => Arr::only($item, ['connectionId', 'channel']),
-                ],
-            ])->toArray(),
+            'RequestItems' => [
+                $this->table => collect($response['Items'])->map(fn($item) => [
+                    'DeleteRequest' => [
+                        'Key' => Arr::only($item, ['connectionId', 'channel']),
+                    ],
+                ])->toArray(),
+            ],
         ]);
     }
 
