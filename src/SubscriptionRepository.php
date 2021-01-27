@@ -47,7 +47,7 @@ class SubscriptionRepository
             'IndexName' => 'lookup-by-connection',
             'KeyConditionExpression' => 'connectionId = :connectionId',
             'ExpressionAttributeValues' => [
-                ':connectionI' => ['S' => $connectionId],
+                ':connectionId' => ['S' => $connectionId],
             ],
         ]);
 
