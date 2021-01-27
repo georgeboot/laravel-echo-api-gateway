@@ -21,7 +21,7 @@ class SubscriptionRepository
         $this->table = $config['table'];
     }
 
-    public function getConnectionIdsForChannels(string ...$channels): Collection
+    public function getConnectionIdsForChannel(string ...$channels): Collection
     {
         $promises = collect($channels)->map(fn($channel) => $this->dynamoDb->queryAsync([
             'TableName' => $this->table,

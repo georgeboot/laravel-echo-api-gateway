@@ -112,17 +112,20 @@ class Driver extends Broadcaster
      */
     public function broadcast(array $channels, $event, array $payload = [])
     {
-        $data = json_encode([
-            'event' => $event,
-            'data' => $payload,
-        ], JSON_THROW_ON_ERROR);
-
         $skipConnectionId = Arr::pull($payload, 'socket');
 
-        $this->subscriptionRepository->getConnectionIdsForChannels(...$channels)
-            ->reject(fn($connectionId) => $connectionId === $skipConnectionId)
-            ->tap(fn($collection) => logger()->debug("Preparing to send to connections", $collection->toArray()))
-            ->each(fn(string $connectionId) => $this->sendMessage($connectionId, $data));
+        foreach ($channels as $channel) {
+            $data = json_encode([
+                'event' => $event,
+                'channel' => $channel,
+                'data' => $payload,
+            ], JSON_THROW_ON_ERROR);
+
+            $this->subscriptionRepository->getConnectionIdsForChannel($channel)
+                ->reject(fn($connectionId) => $connectionId === $skipConnectionId)
+                ->tap(fn($connectionIds) => logger()->debug("Preparing to send to connections for channel '{$channel}'", $connectionIds->toArray()))
+                ->each(fn(string $connectionId) => $this->sendMessage($connectionId, $data));
+        }
 
         return;
 
