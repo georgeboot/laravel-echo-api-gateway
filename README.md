@@ -103,8 +103,10 @@ provider:
     iamRoleStatements:
         # Add this iamRoleStatement
         - Effect: Allow
-          Action: [ dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:Query ]
-          Resource: !GetAtt ConnectionsTable.Arn
+          Action: [ dynamodb:Query, dynamodb:GetItem, dynamodb:PutItem, dynamodb:UpdateItem, dynamodb:DeleteItem, dynamodb:BatchWriteItem ]
+          Resource:
+              - !GetAtt ConnectionsTable.Arn
+              - !Join [ '', [ !GetAtt ConnectionsTable.Arn, '/index/*' ] ]
 ```
 
 Add an environment variable to autogenerate our websocket URL:
