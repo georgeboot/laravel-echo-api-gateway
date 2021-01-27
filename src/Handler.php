@@ -36,6 +36,12 @@ class Handler extends WebsocketHandler
 
             return new HttpResponse('OK');
         } catch (Throwable $throwable) {
+            if (app()->bound('sentry')) {
+                app('sentry')->captureMessage('An error happened:');
+                app('sentry')->captureException($throwable);
+            }
+
+
             $this->exceptionHandler->report($throwable);
 
             throw $throwable;
