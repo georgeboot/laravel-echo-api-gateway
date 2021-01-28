@@ -1,10 +1,5 @@
 # laravel-echo-api-gateway
 
-## !! Work in progress !!
-
-Note that this package is a work in progress. As soon as version 0.1 will be tagged, it will be usable for testing
-purposes. As soon as version 1.0 gets released, it should be usable for production purposes.
-
 ## About
 
 This package enables you to use API Gateway‘s Websockets as a driver for [Laravel Echo](https://github.com/laravel/echo)
@@ -16,6 +11,9 @@ messages. We also configure Laravel to use this connection as a broadcast driver
 
 This package currently only works with either [Bref](https://bref.sh) or [Laravel Vapor](https://vapor.laravel.com),
 though the latter one involves some manual set-up.
+
+As soon as version 1.0 will be released, this package will be suitable for production workloads. Until then, it is
+advised to only use this package for non-critical / non-production projects.
 
 ## Requirements
 
