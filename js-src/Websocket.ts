@@ -172,6 +172,10 @@ export class Websocket {
                 channel: channel.name,
             },
         })
+
+        if (this.listeners[channel.name]) {
+            delete this.listeners[channel.name]
+        }
     }
 
     on(event: string, callback: Function = null): void {
