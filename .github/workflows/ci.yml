@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  pest:
+    runs-on: ubuntu-latest
+    name: PestPHP
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: dom, mbstring, soap, bcmath, pdo_sqlite, intl
+          coverage: pcov
+      - uses: ramsey/composer-install@v1
+        with:
+          composer-options: "--prefer-dist --optimize-autoloader --ignore-platform-reqs"
+      - name: Run PestPHP
+        run: vendor/bin/pest --coverage --coverage-clover test-results/coverage.xml
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: test-results/coverage.xml
+
+  larastan:
+    runs-on: ubuntu-latest
+    name: Larastan
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: soap, bcmath, pdo_sqlite, intl
+      - uses: ramsey/composer-install@v1
+        with:
+          composer-options: "--prefer-dist --optimize-autoloader --ignore-platform-reqs"
+      - name: Run Larastan
+        run: vendor/bin/phpstan analyse --no-progress
+
+#  phpcs:
+#    runs-on: ubuntu-latest
+#    name: PHP Style Fixer
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: '7.4'
+#          extensions: soap, bcmath, pdo_sqlite
+#      - name: Get Composer Cache Directory
+#        id: composer-cache
+#        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+#      - uses: actions/cache@v2
+#        with:
+#          path: ${{ steps.composer-cache.outputs.dir }}
+#          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+#          restore-keys: ${{ runner.os }}-composer-
+#      - name: Install Composer dependencies
+#        run: composer install --no-interaction --no-progress  --prefer-dist --optimize-autoloader --ignore-platform-reqs
+#      - name: Run PHP-CS-Fixer
+#        run: vendor/bin/php-cs-fixer fix --dry-run --diff --allow-risky=yes
