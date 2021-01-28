@@ -26,7 +26,7 @@
         "build": "npm run compile && npm run declarations",
         "compile": "./node_modules/.bin/rollup -c",
         "declarations": "./node_modules/.bin/tsc --emitDeclarationOnly",
-        "lint": "eslint --ext .js,.ts js-src",
+        "lint": "eslint --ext .js,.ts ./js-src ./js-tests",
         "prepublish": "npm run build",
         "release": "npm run test && standard-version && git push --follow-tags && npm publish",
         "test": "jest"
@@ -47,7 +47,9 @@
         "axios": "^0.21.1",
         "eslint": "^7.5.0",
         "jest": "^24.9.0",
+        "jest-websocket-mock": "^2.2.0",
         "laravel-echo": "^1.10.0",
+        "mock-socket": "^9.0.3",
         "rollup": "^2.10.2",
         "rollup-plugin-typescript2": "^0.27.1",
         "standard-version": "^8.0.1",

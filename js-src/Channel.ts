@@ -27,8 +27,6 @@ export class Channel extends BaseChannel implements PresenceChannel {
      */
     eventFormatter: EventFormatter;
 
-    private listeners: { [index: string]: Function } = {};
-
     /**
      * Create a new class instance.
      */
