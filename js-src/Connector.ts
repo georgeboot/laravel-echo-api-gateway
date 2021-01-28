@@ -21,7 +21,7 @@ export class Connector extends BaseConnector {
     connect(): void {
         this.socket = new Websocket(this.options);
 
-        return null;
+        return;
 
         //
         // this.socket.on('reconnect', () => {

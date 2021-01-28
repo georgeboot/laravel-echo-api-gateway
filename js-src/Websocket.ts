@@ -11,7 +11,7 @@ export class Websocket {
 
     websocket: WebSocket;
 
-    private listeners: { [channelName: string]: { [eventName: string]: Function } }
+    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {}
 
     private internalListeners: { [eventName: string]: Function } = {};
 
