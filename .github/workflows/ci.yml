@@ -19,13 +19,13 @@ jobs:
         with:
           composer-options: "--prefer-dist --optimize-autoloader --ignore-platform-reqs"
       - name: Run PestPHP
-        run: vendor/bin/pest --coverage --coverage-clover test-results/coverage.xml
+        run: vendor/bin/pest --coverage --coverage-clover test-results/pest.xml
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: test-results/coverage.xml
+          file: test-results/pest.xml
 
   larastan:
     runs-on: ubuntu-latest
@@ -51,6 +51,22 @@ jobs:
         run: yarn install
       - name: Run ESLint
         run: yarn run lint
+
+  jest:
+    runs-on: ubuntu-latest
+    name: Jest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install
+      - name: Run Jest
+        run: yarn test --coverage --coverageDirectory=test-results/jest.xml
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: test-results/jest.xml
 
 #  phpcs:
 #    runs-on: ubuntu-latest
