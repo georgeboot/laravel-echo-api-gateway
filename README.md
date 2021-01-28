@@ -1,6 +1,6 @@
 # laravel-echo-api-gateway
 
-![CI](https://github.com/georgeboot/laravel-echo-api-gateway/workflows/CI/badge.svg?event=push)
+[![CI](https://github.com/georgeboot/laravel-echo-api-gateway/workflows/CI/badge.svg?event=push)](https://github.com/georgeboot/laravel-echo-api-gateway/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/georgeboot/laravel-echo-api-gateway/branch/master/graph/badge.svg?token=UVIA3FBQPP)](https://codecov.io/gh/georgeboot/laravel-echo-api-gateway)
 
 This package enables you to use API Gateway‘s Websockets as a driver for [Laravel Echo](https://github.com/laravel/echo)
