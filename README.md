@@ -1,7 +1,5 @@
 # laravel-echo-api-gateway
 
-## About
-
 This package enables you to use API Gateway‘s Websockets as a driver for [Laravel Echo](https://github.com/laravel/echo)
 , so you don’t have to use services like Pusher or Socket.io.
 
