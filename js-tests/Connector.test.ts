@@ -1,5 +1,5 @@
 import WS from "jest-websocket-mock";
-import {Connector} from "../dist/Connector";
+import {Connector} from "../js-src/Connector";
 
 describe('Connector', () => {
     let server;
