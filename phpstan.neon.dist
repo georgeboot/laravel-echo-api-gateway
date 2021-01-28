@@ -9,8 +9,9 @@ parameters:
 
     level: max
 
-    #    ignoreErrors:
-    #        - '#Unsafe usage of new static#'
+    ignoreErrors:
+        - '#^Cannot call method debug\(\) on Illuminate\\Log\\LogManager\|null.$#'
+        - '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::withArgs\(\).$#'
     #
     #    excludePaths:
     #        - ./*/*/FileToBeExcluded.php
