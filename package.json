@@ -1,6 +1,6 @@
 {
     "name": "laravel-echo-api-gateway",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "description": "Use Laravel Echo with API Gateway Websockets",
     "keywords": [
         "laravel",
