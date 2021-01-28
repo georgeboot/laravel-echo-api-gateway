@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Run ESLint
-        run: yarn run eslint
+        run: yarn run lint
 
 #  phpcs:
 #    runs-on: ubuntu-latest
