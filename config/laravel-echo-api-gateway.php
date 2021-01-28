@@ -7,11 +7,16 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'token' => env('AWS_SESSION_TOKEN'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
-        'endpoint' => env('DYNAMODB_ENDPOINT'),
     ],
 
-    'table' => env('LARAVEL_ECHO_API_GATEWAY_TABLE', 'connections'),
+    'api' => [
+        'id' => env('LARAVEL_ECHO_API_GATEWAY_API_ID'),
+        'stage' => env('LARAVEL_ECHO_API_GATEWAY_API_STAGE'),
+    ],
 
-    'endpoint' => env('BROADCAST_API_GATEWAY_URL'),
+    'dynamodb' => [
+        'endpoint' => env('DYNAMODB_ENDPOINT'),
+        'table' => env('LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE', 'connections'),
+    ],
 
 ];

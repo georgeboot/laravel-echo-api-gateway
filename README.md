@@ -41,6 +41,8 @@ yarn add laravel-echo-api-gateway
 npn install --save laravel-echo-api-gateway
 ```
 
+### When using Bref
+
 Next, when using Bref, we have to add some elements to our `serverless.yml` file. If using Vapor, these resources have
 to be created by hand using the AWS CLI or console.
 
@@ -116,8 +118,11 @@ provider:
     name: aws
 
     environment:
-        # Add this line
-        BROADCAST_API_GATEWAY_URL: !Join [ '', [ 'wss://', !Ref "WebsocketsApi", '.execute-api.', "${self:provider.region}", '.', !Ref "AWS::URLSuffix", '/', "${self:provider.stage}" ] ]
+        # Add these variables
+        BROADCAST_DRIVER: laravel-echo-api-gateway
+        LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE: !Ref ConnectionsTable
+        LARAVEL_ECHO_API_GATEWAY_API_ID: !Ref WebsocketsApi
+        LARAVEL_ECHO_API_GATEWAY_API_STAGE: "${self:provider.stage}"
 ```
 
 Next, create the PHP handler file in `handlers/websocket.php`
@@ -139,12 +144,46 @@ $kernel->bootstrap();
 return $app->make(Handler::class);
 ```
 
+Now, deploy your app by running `serverless deploy` or similar. Write down the websocket url the output gives you.
+
+### When using Vapor
+
+When using Vapor, you will have to create these required resources by hand using the AWS CLI or Console:
+
+#### DynamoDB table for connections
+
+Create a DynamoDB table for the connections. Use `connectionId` (string) as a HASH key, and `channel` (string) as a SORT
+key. Set the capacity setting to whatever you like (probably on-demand).
+
+Create 2 indexes:
+
+1. Name: `lookup-by-connection`, key: `connectionId`, no sort key, projected: ALL
+2. Name: `lookup-by-channel`, key: `channel`, no sort key, projected: ALL
+
+#### API Gateway
+
+Create a new Websocket API. Enter a name and leave the route selection expression to what it is. Add a `$disconnect`
+and `$default`. Set both integrations to `Lambda` and select your CLI lambda from the list. Set the name of the stage to
+what you desire and create the API. Once created, write down the ID, as we'll need it later.
+
+#### IAM Permissions
+
+In IAM, go to roles and open `laravel-vapor-role`. Open the inline policy and edit it. On the JSON tab,
+add `"execute-api:*"` to the list of actions.
+
+Then, login to [Laravel Vapor](https://vapor.laravel.com/app), go to team settings, AWS Accounts, click on Role next to
+the correct account and deselect Receive Updates.
+
 Edit your `.env`:
 
 ```dotenv
 BROADCAST_DRIVER=laravel-echo-api-gateway
-MIX_BROADCAST_API_GATEWAY_URL="${BROADCAST_API_GATEWAY_URL}"
+LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE=the-table-name-you-entered-when-creating-it
+LARAVEL_ECHO_API_GATEWAY_API_ID=your-websocket-api-id
+LARAVEL_ECHO_API_GATEWAY_API_STAGE=your-api-stage-name
 ```
+
+### For both Bref and Vapor
 
 Add to your javascript file:
 
@@ -154,7 +193,8 @@ import {broadcaster} from 'laravel-echo-api-gateway';
 
 const echo = new Echo({
     broadcaster,
-    host: process.env.MIX_BROADCAST_API_GATEWAY_URL,
+    // replace the placeholders
+    host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
 });
 ```
 

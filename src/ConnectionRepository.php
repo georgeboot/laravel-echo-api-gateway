@@ -3,7 +3,6 @@
 namespace Georgeboot\LaravelEchoApiGateway;
 
 use Aws\ApiGatewayManagementApi\ApiGatewayManagementApiClient;
-use Illuminate\Support\Str;
 
 class ConnectionRepository
 {
@@ -13,7 +12,7 @@ class ConnectionRepository
     {
         $this->apiGatewayManagementApiClient = new ApiGatewayManagementApiClient(array_merge($config['connection'], [
             'version' => '2018-11-29',
-            'endpoint' => Str::replaceFirst('wss://', 'https://', $config['endpoint']) . '/',
+            'endpoint' => "https://{$config['api']['id']}.execute-api.{$config['connection']['region']}.amazonaws.com/{$config['api']['stage']}/",
         ]));
     }
 

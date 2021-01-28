@@ -16,9 +16,10 @@ class SubscriptionRepository
     {
         $this->dynamoDb = new DynamoDbClient(array_merge($config['connection'], [
             'version' => '2012-08-10',
+            'endpoint' => $config['dynamodb']['endpoint'],
         ]));
 
-        $this->table = $config['table'];
+        $this->table = $config['dynamodb']['table'];
     }
 
     public function getConnectionIdsForChannel(string ...$channels): Collection
