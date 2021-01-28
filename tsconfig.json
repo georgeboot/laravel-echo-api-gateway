@@ -18,7 +18,9 @@
         ]
     },
     "include": [
-        "./typings/*.ts",
-        "./js-src/*.ts"
+        //        "./typings/*.ts",
+        "./js-src/",
+        "./node_modules/laravel-echo/typings/",
+        "./node_modules/laravel-echo/src/"
     ]
 }
