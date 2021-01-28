@@ -25,6 +25,7 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: pest
           file: test-results/pest.xml
 
   larastan:
@@ -66,6 +67,7 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: jest
           file: test-results/jest/clover.xml
 
 #  phpcs:

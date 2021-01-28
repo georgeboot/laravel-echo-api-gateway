@@ -1,0 +1,23 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 25%
+      pest:
+        target: 25%
+        flags:
+          - pest
+      jest:
+        target: 25%
+        flags:
+          - jest
+
+flags:
+  pest:
+    paths:
+      - src/
+    carryforward: false
+  jest:
+    paths:
+      - js-src/
+    carryforward: false
