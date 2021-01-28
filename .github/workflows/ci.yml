@@ -42,6 +42,16 @@ jobs:
       - name: Run Larastan
         run: vendor/bin/phpstan analyse --no-progress
 
+  eslint:
+    runs-on: ubuntu-latest
+    name: ESLint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn install
+      - name: Run ESLint
+        run: yarn run eslint
+
 #  phpcs:
 #    runs-on: ubuntu-latest
 #    name: PHP Style Fixer
