@@ -193,7 +193,7 @@ Add to your javascript file:
 import Echo from 'laravel-echo';
 import {broadcaster} from 'laravel-echo-api-gateway';
 
-const echo = new Echo({
+window.Echo = new Echo({
     broadcaster,
     // replace the placeholders
     host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
