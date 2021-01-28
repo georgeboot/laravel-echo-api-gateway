@@ -60,13 +60,13 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Run Jest
-        run: yarn test --coverage --coverageDirectory=test-results/jest.xml
+        run: yarn test --coverage --coverageDirectory=test-results/jest
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: test-results/jest.xml
+          file: test-results/jest/clover.xml
 
 #  phpcs:
 #    runs-on: ubuntu-latest
