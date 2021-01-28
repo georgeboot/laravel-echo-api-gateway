@@ -1,23 +1,24 @@
 {
-  "compilerOptions": {
-    "declaration": true,
-    "module": "es6",
-    "moduleResolution": "node",
-    "outDir": "./dist",
-    "sourceMap": false,
-    "target": "es6",
-    "isolatedModules": false,
-    "esModuleInterop": true,
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "lib": [
-      "es2017",
-      "dom"
+    "compilerOptions": {
+        "declaration": true,
+        "module": "es6",
+        "moduleResolution": "node",
+        "outDir": "./dist",
+        "sourceMap": false,
+        "target": "es6",
+        "isolatedModules": false,
+        "esModuleInterop": true,
+        "preserveSymlinks": true,
+        "typeRoots": [
+            "node_modules/@types"
+        ],
+        "lib": [
+            "es2017",
+            "dom"
+        ]
+    },
+    "include": [
+        "./typings/*.ts",
+        "./js-src/*.ts"
     ]
-  },
-  "include": [
-    "./typings/*.ts",
-    "./js-src/*.ts"
-  ]
 }
