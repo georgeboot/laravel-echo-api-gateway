@@ -6,11 +6,11 @@ describe('Connector', () => {
     let server: WS;
 
     beforeEach(() => {
-        if (server) {
-            server.close()
-        }
-
         server = new WS("ws://localhost:1234");
+    });
+
+    afterEach(() => {
+        server.close()
     });
 
     test('socket id is correctly set', async () => {
