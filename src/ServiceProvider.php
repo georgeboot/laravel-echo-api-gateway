@@ -37,10 +37,6 @@ class ServiceProvider extends LaravelServiceProvider
                 config('laravel-echo-api-gateway')
             );
         });
-
-        $this->commands([
-            VaporHandle::class,
-        ]);
     }
 
     public function boot(BroadcastManager $broadcastManager): void
@@ -48,5 +44,9 @@ class ServiceProvider extends LaravelServiceProvider
         $broadcastManager->extend('laravel-echo-api-gateway', function (): Broadcaster {
             return $this->app->make(Driver::class);
         });
+
+        $this->commands([
+            VaporHandle::class,
+        ]);
     }
 }
