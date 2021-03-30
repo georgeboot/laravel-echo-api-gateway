@@ -14,7 +14,7 @@ class SubscriptionRepository
 
     public function __construct(?array $config)
     {
-        if (! $array) {
+        if (! $config) {
             return;
         }
 
