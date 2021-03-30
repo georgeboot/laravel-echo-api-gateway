@@ -37,7 +37,7 @@ composer require georgeboot/laravel-echo-api-gateway
 
 yarn add laravel-echo-api-gateway
 # or
-npn install --save laravel-echo-api-gateway
+npm install --save-dev laravel-echo-api-gateway
 ```
 
 ### Platform-specific instructions
