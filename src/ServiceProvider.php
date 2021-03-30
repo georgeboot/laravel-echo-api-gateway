@@ -19,7 +19,7 @@ class ServiceProvider extends LaravelServiceProvider
             'driver' => 'laravel-echo-api-gateway',
         ]);
 
-        $config = config('laravel-echo-api-gateway');
+        $config = config('laravel-echo-api-gateway', []);
 
         $this->app->bind(ConnectionRepository::class, fn () => new ConnectionRepository($config));
         $this->app->bind(SubscriptionRepository::class, fn () => new SubscriptionRepository($config));
