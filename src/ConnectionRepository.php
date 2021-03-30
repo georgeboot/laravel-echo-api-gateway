@@ -8,8 +8,12 @@ class ConnectionRepository
 {
     protected ApiGatewayManagementApiClient $apiGatewayManagementApiClient;
 
-    public function __construct(array $config)
+    public function __construct(?array $config)
     {
+        if (! $array) {
+            return;
+        }
+        
         $this->apiGatewayManagementApiClient = new ApiGatewayManagementApiClient(array_merge($config['connection'], [
             'version' => '2018-11-29',
             'endpoint' => "https://{$config['api']['id']}.execute-api.{$config['connection']['region']}.amazonaws.com/{$config['api']['stage']}/",
