@@ -12,8 +12,12 @@ class SubscriptionRepository
     protected DynamoDbClient $dynamoDb;
     protected string $table;
 
-    public function __construct(array $config)
+    public function __construct(?array $config)
     {
+        if (! $array) {
+            return;
+        }
+
         $this->dynamoDb = new DynamoDbClient(array_merge($config['connection'], [
             'version' => '2012-08-10',
             'endpoint' => $config['dynamodb']['endpoint'],
