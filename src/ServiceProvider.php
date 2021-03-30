@@ -3,7 +3,6 @@
 namespace Georgeboot\LaravelEchoApiGateway;
 
 use Georgeboot\LaravelEchoApiGateway\Commands\VaporHandle;
-use Illuminate\Broadcasting\Broadcasters\Broadcaster;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
@@ -20,33 +19,22 @@ class ServiceProvider extends LaravelServiceProvider
             'driver' => 'laravel-echo-api-gateway',
         ]);
 
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/laravel-echo-api-gateway.php' => config_path('laravel-echo-api-gateway.php'),
-            ], 'laravel-echo-api-gateway-config');
-        }
+        $config = config('laravel-echo-api-gateway');
 
-        $this->app->bind(ConnectionRepository::class, function () {
-            return new ConnectionRepository(
-                config('laravel-echo-api-gateway')
-            );
-        });
-
-        $this->app->bind(SubscriptionRepository::class, function () {
-            return new SubscriptionRepository(
-                config('laravel-echo-api-gateway')
-            );
-        });
+        $this->app->bind(ConnectionRepository::class, fn () => new ConnectionRepository($config));
+        $this->app->bind(SubscriptionRepository::class, fn () => new SubscriptionRepository($config));
     }
 
     public function boot(BroadcastManager $broadcastManager): void
     {
-        $broadcastManager->extend('laravel-echo-api-gateway', function (): Broadcaster {
-            return $this->app->make(Driver::class);
-        });
+        $broadcastManager->extend('laravel-echo-api-gateway', fn () => $this->app->make(Driver::class));
 
         $this->commands([
             VaporHandle::class,
         ]);
+
+        $this->publishes([
+            __DIR__ . '/../config/laravel-echo-api-gateway.php' => config_path('laravel-echo-api-gateway.php'),
+        ], 'laravel-echo-api-gateway-config');
     }
 }
