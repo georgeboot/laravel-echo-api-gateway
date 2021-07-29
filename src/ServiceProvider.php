@@ -12,7 +12,8 @@ class ServiceProvider extends LaravelServiceProvider
     public function register()
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/laravel-echo-api-gateway.php', 'laravel-echo-api-gateway'
+            __DIR__ . '/../config/laravel-echo-api-gateway.php',
+            'laravel-echo-api-gateway'
         );
 
         Config::set('broadcasting.connections.laravel-echo-api-gateway', [
@@ -21,8 +22,10 @@ class ServiceProvider extends LaravelServiceProvider
 
         $config = config('laravel-echo-api-gateway');
 
-        $this->app->bind(ConnectionRepository::class, fn () => new ConnectionRepository($config));
-        $this->app->bind(SubscriptionRepository::class, fn () => new SubscriptionRepository($config));
+        $subscriptionRepository = new SubscriptionRepository($config);
+
+        $this->app->bind(SubscriptionRepository::class, fn () => $subscriptionRepository);
+        $this->app->bind(ConnectionRepository::class, fn () => new ConnectionRepository($subscriptionRepository, $config));
     }
 
     public function boot(BroadcastManager $broadcastManager): void

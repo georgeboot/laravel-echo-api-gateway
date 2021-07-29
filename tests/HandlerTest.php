@@ -1,10 +1,16 @@
 <?php
 
+use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
+use Aws\CommandInterface;
+use Aws\Exception\AwsException;
+use Aws\MockHandler;
+use Aws\Result;
 use Bref\Context\Context;
 use Georgeboot\LaravelEchoApiGateway\ConnectionRepository;
 use Georgeboot\LaravelEchoApiGateway\Handler;
 use Georgeboot\LaravelEchoApiGateway\SubscriptionRepository;
 use Mockery\Mock;
+use Psr\Http\Message\RequestInterface;
 
 it('can subscribe to open channels', function () {
     app()->instance(SubscriptionRepository::class, Mockery::mock(SubscriptionRepository::class, function ($mock) {
@@ -70,4 +76,27 @@ it('can unsubscribe from a channel', function () {
         ],
         'body' => json_encode(['event' => 'unsubscribe', 'data' => ['channel' => 'test-channel']]),
     ], $context);
+});
+
+it('handles dropped connections', function () {
+    $mock = new MockHandler();
+
+    $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+        return new  ApiGatewayManagementApiException('', $cmd, ['code' => 'GoneException']);
+    });
+
+    /** @var SubscriptionRepository */
+    $subscriptionRepository = Mockery::mock(SubscriptionRepository::class, function ($mock) {
+        /** @var Mock $mock */
+        $mock->shouldReceive('clearConnection')->withArgs(function (string $connectionId): bool {
+            return $connectionId === 'dropped-connection-id-1234';
+        })->once();
+    });
+
+    $config = config('laravel-echo-api-gateway');
+
+    /** @var ConnectionRepository */
+    $connectionRepository = new ConnectionRepository($subscriptionRepository, array_merge_recursive(['connection' => ['handler' => $mock]], $config));
+
+    $connectionRepository->sendMessage('dropped-connection-id-1234', 'test-message');
 });

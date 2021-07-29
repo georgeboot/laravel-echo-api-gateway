@@ -11,11 +11,10 @@ use Throwable;
 
 class Handler extends WebsocketHandler
 {
-    protected SubscriptionRepository $subscriptionRepository;
-    protected ConnectionRepository $connectionRepository;
-
-    public function __construct(SubscriptionRepository $subscriptionRepository, ConnectionRepository $connectionRepository)
-    {
+    public function __construct(
+        protected SubscriptionRepository $subscriptionRepository,
+        protected ConnectionRepository $connectionRepository
+    ) {
         $this->subscriptionRepository = $subscriptionRepository;
         $this->connectionRepository = $connectionRepository;
     }
