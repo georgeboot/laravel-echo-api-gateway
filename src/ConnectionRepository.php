@@ -27,8 +27,8 @@ class ConnectionRepository
                 'Data' => $data,
             ]);
         } catch (ApiGatewayManagementApiException $e) {
-            // handle gone connections
-            if ($e->getAwsErrorCode() === 'GoneException') {
+            // GoneException: The connection with the provided id no longer exists.
+            if ($e->getAwsErrorCode() === 'Gone') {
                 $this->subscriptionRepository->clearConnection($connectionId);
 
                 return;
