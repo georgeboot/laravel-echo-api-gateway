@@ -4,6 +4,7 @@ namespace Georgeboot\LaravelEchoApiGateway;
 
 use Aws\ApiGatewayManagementApi\ApiGatewayManagementApiClient;
 use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
+use GuzzleHttp\Exception\ClientException;
 
 class ConnectionRepository
 {
@@ -26,15 +27,15 @@ class ConnectionRepository
                 'ConnectionId' => $connectionId,
                 'Data' => $data,
             ]);
-        } catch (ApiGatewayManagementApiException $e) {
+        } catch (ClientException $guzzleClientException) {
             // GoneException: The connection with the provided id no longer exists.
-            if ($e->getAwsErrorCode() === 'Gone') {
+            if ($guzzleClientException->getResponse()->getStatusCode() === 410) {
                 $this->subscriptionRepository->clearConnection($connectionId);
 
                 return;
             }
 
-            throw $e;
+            throw $guzzleClientException;
         }
     }
 }

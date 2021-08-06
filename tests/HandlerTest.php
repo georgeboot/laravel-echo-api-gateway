@@ -9,6 +9,7 @@ use Bref\Context\Context;
 use Georgeboot\LaravelEchoApiGateway\ConnectionRepository;
 use Georgeboot\LaravelEchoApiGateway\Handler;
 use Georgeboot\LaravelEchoApiGateway\SubscriptionRepository;
+use GuzzleHttp\Psr7\Response;
 use Mockery\Mock;
 use Psr\Http\Message\RequestInterface;
 
@@ -82,7 +83,7 @@ it('handles dropped connections', function () {
     $mock = new MockHandler();
 
     $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-        return new  ApiGatewayManagementApiException('', $cmd, ['code' => 'Gone']);
+        return new \GuzzleHttp\Exception\ClientException('', $req, new Response(410));
     });
 
     /** @var SubscriptionRepository */
