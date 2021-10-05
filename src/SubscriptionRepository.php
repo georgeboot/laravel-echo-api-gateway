@@ -25,6 +25,7 @@ class SubscriptionRepository
     public function getConnectionIdsForChannel(string ...$channels): Collection
     {
         $promises = collect($channels)->map(fn($channel) => $this->dynamoDb->queryAsync([
+            'ConsistentRead' => true,
             'TableName' => $this->table,
             'IndexName' => 'lookup-by-channel',
             'KeyConditionExpression' => 'channel = :channel',
@@ -44,6 +45,7 @@ class SubscriptionRepository
     public function clearConnection(string $connectionId): void
     {
         $response = $this->dynamoDb->query([
+            'ConsistentRead' => true,
             'TableName' => $this->table,
             'IndexName' => 'lookup-by-connection',
             'KeyConditionExpression' => 'connectionId = :connectionId',
