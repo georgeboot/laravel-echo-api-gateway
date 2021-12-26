@@ -146,7 +146,7 @@ export class Websocket {
                     event: 'subscribe',
                     data: {
                         channel: channel.name,
-                        auth: response.data.auth,
+                        ... response.data
                     },
                 })
             }).catch((error) => {
