@@ -27,9 +27,9 @@ class ConnectionRepository
                 'ConnectionId' => $connectionId,
                 'Data' => $data,
             ]);
-        } catch (ClientException $guzzleClientException) {
-            // GoneException: The connection with the provided id no longer exists.
-            if ($guzzleClientException->getResponse()->getStatusCode() === 410) {
+        } catch (ApiGatewayManagementApiException $e) {
+             // GoneException: The connection with the provided id no longer exists.
+             if ($e->getAwsErrorCode() === 'GoneException') {
                 $this->subscriptionRepository->clearConnection($connectionId);
 
                 return;
