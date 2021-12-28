@@ -35,7 +35,7 @@ class ConnectionRepository
                 return;
             }
 
-            throw $guzzleClientException;
+            throw $e;
         }
     }
 }
