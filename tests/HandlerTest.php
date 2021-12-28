@@ -83,7 +83,7 @@ it('handles dropped connections', function () {
     $mock = new MockHandler();
 
     $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
-        return new \GuzzleHttp\Exception\ClientException('', $req, new Response(410));
+        return new  ApiGatewayManagementApiException('', $cmd, ['code' => 'GoneException']);
     });
 
     /** @var SubscriptionRepository */

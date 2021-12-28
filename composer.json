@@ -54,7 +54,10 @@
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "8.0.12"
+        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true
