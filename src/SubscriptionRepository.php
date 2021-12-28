@@ -24,7 +24,7 @@ class SubscriptionRepository
 
     public function getConnectionIdsForChannel(string ...$channels): Collection
     {
-        $promises = collect($channels)->map(fn($channel) => $this->dynamoDb->queryAsync([
+        $promises = collect($channels)->map(fn ($channel) => $this->dynamoDb->queryAsync([
             'TableName' => $this->table,
             'IndexName' => 'lookup-by-channel',
             'KeyConditionExpression' => 'channel = :channel',
@@ -36,8 +36,8 @@ class SubscriptionRepository
         $responses = Utils::all($promises)->wait();
 
         return collect($responses)
-            ->flatmap(fn($result) => $result['Items'])
-            ->map(fn($item) => $item['connectionId']['S'])
+            ->flatmap(fn (array $result): array => $result['Items'])
+            ->map(fn (array $item): string => $item['connectionId']['S'])
             ->unique();
     }
 
@@ -55,7 +55,7 @@ class SubscriptionRepository
         if (! empty($response['Items'])) {
             $this->dynamoDb->batchWriteItem([
                 'RequestItems' => [
-                    $this->table => collect($response['Items'])->map(fn($item) => [
+                    $this->table => collect($response['Items'])->map(fn ($item) => [
                         'DeleteRequest' => [
                             'Key' => Arr::only($item, ['connectionId', 'channel']),
                         ],
