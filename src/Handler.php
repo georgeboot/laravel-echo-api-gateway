@@ -93,7 +93,7 @@ class Handler extends WebsocketHandler
             $data = "{$event->getConnectionId()}:{$channel}";
 
             if ($channelData) {
-                $data .= ':' . json_encode($channelData);
+                $data .= ':' . $channelData;
             }
 
             $signature = hash_hmac('sha256', $data, config('app.key'), false);
