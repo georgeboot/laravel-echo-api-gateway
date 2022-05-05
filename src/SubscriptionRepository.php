@@ -36,7 +36,7 @@ class SubscriptionRepository
         $responses = Utils::all($promises)->wait();
 
         return collect($responses)
-            ->flatmap(fn (array $result): array => $result['Items'])
+             ->flatmap(fn (\Aws\Result $result): array => $result['Items'])
             ->map(fn (array $item): string => $item['connectionId']['S'])
             ->unique();
     }
