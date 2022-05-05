@@ -2,10 +2,12 @@
 
 namespace Georgeboot\LaravelEchoApiGateway;
 
+use Aws\ApiGatewayManagementApi\Exception\ApiGatewayManagementApiException;
 use Bref\Context\Context;
 use Bref\Event\ApiGateway\WebsocketEvent;
 use Bref\Event\ApiGateway\WebsocketHandler;
 use Bref\Event\Http\HttpResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -69,9 +71,12 @@ class Handler extends WebsocketHandler
             $this->subscribe($event, $context);
         } elseif ($eventType === 'unsubscribe') {
             $this->unsubscribe($event, $context);
+        } elseif (Str::startsWith($eventType, 'client-')) {
+            $this->broadcastToChannel($event, $context);
         } else {
             $this->sendMessage($event, $context, [
                 'event' => 'error',
+                'message' => 'Unknown event: ' . $event,
             ]);
         }
     }
@@ -134,8 +139,39 @@ class Handler extends WebsocketHandler
         ]);
     }
 
+    public function broadcastToChannel(WebsocketEvent $event, Context $context): void
+    {
+        $skipConnectionId = $event->getConnectionId();
+        $eventBody = json_decode($event->getBody(), true);
+        $channel = Arr::get($eventBody, 'channel');
+        $event = Arr::get($eventBody, 'event');
+        $payload = Arr::get($eventBody, 'data');
+        $data = json_encode([
+            'event'=>$event,
+            'channel'=>$channel,
+            'data'=>json_encode($payload),
+        ]);
+        $this->subscriptionRepository->getConnectionIdsForChannel($channel)
+            ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
+            ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
+    }
+
     public function sendMessage(WebsocketEvent $event, Context $context, array $data): void
     {
         $this->connectionRepository->sendMessage($event->getConnectionId(), json_encode($data, JSON_THROW_ON_ERROR));
+    }
+
+    protected function sendMessageToConnection(string $connectionId, string $data): void
+    {
+        try {
+            $this->connectionRepository->sendMessage($connectionId, $data);
+        } catch (ApiGatewayManagementApiException $exception) {
+            if ($exception->getAwsErrorCode() === 'GoneException') {
+                $this->subscriptionRepository->clearConnection($connectionId);
+                return;
+            }
+
+            throw $exception;
+        }
     }
 }
