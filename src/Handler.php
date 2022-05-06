@@ -75,8 +75,7 @@ class Handler extends WebsocketHandler
             $this->broadcastToChannel($event, $context);
         } else {
             $this->sendMessage($event, $context, [
-                'event' => 'error',
-                'message' => 'Unknown event: ' . $event,
+                'event' => 'error'
             ]);
         }
     }
@@ -150,7 +149,7 @@ class Handler extends WebsocketHandler
             'event'=>$event,
             'channel'=>$channel,
             'data'=>$payload,
-        ]);
+        ]) ?: '';
         $this->subscriptionRepository->getConnectionIdsForChannel($channel)
             ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
             ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
