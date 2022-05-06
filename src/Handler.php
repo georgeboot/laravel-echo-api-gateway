@@ -145,6 +145,9 @@ class Handler extends WebsocketHandler
         $channel = Arr::get($eventBody, 'channel');
         $event = Arr::get($eventBody, 'event');
         $payload = Arr::get($eventBody, 'data');
+        if (is_object($payload) || is_array($payload)) {
+            $payload = json_encode($payload);
+        }
         $data = json_encode([
             'event'=>$event,
             'channel'=>$channel,
