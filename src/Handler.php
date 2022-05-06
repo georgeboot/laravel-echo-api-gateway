@@ -149,7 +149,7 @@ class Handler extends WebsocketHandler
         $data = json_encode([
             'event'=>$event,
             'channel'=>$channel,
-            'data'=>json_encode($payload),
+            'data'=>$payload,
         ]);
         $this->subscriptionRepository->getConnectionIdsForChannel($channel)
             ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
