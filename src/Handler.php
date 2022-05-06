@@ -9,6 +9,7 @@ use Bref\Event\ApiGateway\WebsocketHandler;
 use Bref\Event\Http\HttpResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class Handler extends WebsocketHandler
@@ -42,6 +43,7 @@ class Handler extends WebsocketHandler
 
     protected function handleDisconnect(WebsocketEvent $event, Context $context): void
     {
+        $this->sendPresenceDisconnectNotices($event);
         $this->subscriptionRepository->clearConnection($event->getConnectionId());
     }
 
@@ -115,12 +117,28 @@ class Handler extends WebsocketHandler
             }
         }
 
-        $this->subscriptionRepository->subscribeToChannel($event->getConnectionId(), $channel);
+        if (Str::startsWith($channel, 'presence-')) {
+            $this->subscriptionRepository->subscribeToPresenceChannel(
+                $event->getConnectionId(),
+                $channelData,
+                $channel
+            );
+            $data = $this->subscriptionRepository->getUserListForPresenceChannel($channel)
+                ->transform(function ($user) {
+                    $user = json_decode($user, true);
+                    return Arr::get($user, 'user_info', json_encode($user));
+                })
+                ->toArray();
+            $this->sendPresenceAdd($event, $channel, Arr::get(json_decode($channelData, true), 'user_info'));
+        } else {
+            $this->subscriptionRepository->subscribeToChannel($event->getConnectionId(), $channel);
+            $data = [];
+        }
 
         $this->sendMessage($event, $context, [
             'event' => 'subscription_succeeded',
             'channel' => $channel,
-            'data' => [],
+            'data' => $data,
         ]);
     }
 
@@ -136,6 +154,18 @@ class Handler extends WebsocketHandler
             'channel' => $channel,
             'data' => [],
         ]);
+    }
+
+    public function sendPresenceDisconnectNotices(WebsocketEvent $event): void
+    {
+        $channels = $this->subscriptionRepository->getChannelsSubscribedToByConnectionId($event->getConnectionId());
+        $channels->filter(function ($info) {
+            return Str::startsWith(Arr::get($info, 'channel'), 'presence-');
+        })->each(function ($info) use ($event) {
+            $channel = Arr::get($info, 'channel');
+            $userData = json_decode(Arr::get($info, 'userData'), true);
+            $this->sendPresenceRemove($event, $channel, Arr::get($userData, 'user_info'));
+        });
     }
 
     public function broadcastToChannel(WebsocketEvent $event, Context $context): void
@@ -158,6 +188,34 @@ class Handler extends WebsocketHandler
             ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
     }
 
+    public function sendPresenceAdd(WebsocketEvent $event, string $channel, array $data): void
+    {
+        $skipConnectionId = $event->getConnectionId();
+        $eventBody = json_decode($event->getBody(), true);
+        $data = json_encode([
+            'event'=>'member_added',
+            'channel'=>$channel,
+            'data'=>$data
+        ]) ?: '';
+        $this->subscriptionRepository->getConnectionIdsForChannel($channel)
+            ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
+            ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
+    }
+
+    public function sendPresenceRemove(WebsocketEvent $event, string $channel, array $data): void
+    {
+        $skipConnectionId = $event->getConnectionId();
+        $eventBody = json_decode($event->getBody(), true);
+        $data = json_encode([
+            'event'=>'member_removed',
+            'channel'=>$channel,
+            'data'=>$data
+        ]) ?: '';
+        $this->subscriptionRepository->getConnectionIdsForChannel($channel)
+            ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
+            ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
+    }
+
     public function sendMessage(WebsocketEvent $event, Context $context, array $data): void
     {
         $this->connectionRepository->sendMessage($event->getConnectionId(), json_encode($data, JSON_THROW_ON_ERROR));
@@ -168,7 +226,7 @@ class Handler extends WebsocketHandler
         try {
             $this->connectionRepository->sendMessage($connectionId, $data);
         } catch (ApiGatewayManagementApiException $exception) {
-            if ($exception->getAwsErrorCode() === 'GoneException') {
+            if ($exception->getStatusCode() === Response::HTTP_GONE) {
                 $this->subscriptionRepository->clearConnection($connectionId);
                 return;
             }

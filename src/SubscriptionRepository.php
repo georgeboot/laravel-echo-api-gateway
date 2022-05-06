@@ -41,6 +41,43 @@ class SubscriptionRepository
             ->unique();
     }
 
+    public function getUserListForPresenceChannel(string ...$channels): Collection
+    {
+        $promises = collect($channels)->map(fn ($channel) => $this->dynamoDb->queryAsync([
+            'TableName' => $this->table,
+            'IndexName' => 'lookup-by-channel',
+            'KeyConditionExpression' => 'channel = :channel',
+            'ExpressionAttributeValues' => [
+                ':channel' => ['S' => $channel],
+            ],
+        ]))->toArray();
+
+        $responses = Utils::all($promises)->wait();
+
+        return collect($responses)
+             ->flatmap(fn (\Aws\Result $result): array => $result['Items'])
+            ->map(fn (array $item): string => Arr::get($item, 'userData.S', ''))
+            ->unique();
+    }
+
+    public function getChannelsSubscribedToByConnectionId(string $connectionId): Collection
+    {
+        $response = $this->dynamoDb->query([
+            'TableName' => $this->table,
+            'KeyConditionExpression' => 'connectionId = :connectionId',
+            'ExpressionAttributeValues' => [
+                ':connectionId' => ['S' => $connectionId],
+            ],
+        ]);
+        return collect(Arr::get($response, 'Items', []))
+            ->transform(function ($item) {
+                return [
+                    'channel'=>Arr::get($item, 'channel.S'),
+                    'userData'=>Arr::get($item, 'userData.S'),
+                ];
+            });
+    }
+
     public function clearConnection(string $connectionId): void
     {
         $response = $this->dynamoDb->query([
@@ -82,6 +119,18 @@ class SubscriptionRepository
             'TableName' => $this->table,
             'Key' => [
                 'connectionId' => ['S' => $connectionId],
+                'channel' => ['S' => $channel],
+            ],
+        ]);
+    }
+
+    public function subscribeToPresenceChannel(string $connectionId, string $userData, string $channel): void
+    {
+        $this->dynamoDb->putItem([
+            'TableName' => $this->table,
+            'Item' => [
+                'connectionId' => ['S' => $connectionId],
+                'userData' => ['S' => $userData],
                 'channel' => ['S' => $channel],
             ],
         ]);
