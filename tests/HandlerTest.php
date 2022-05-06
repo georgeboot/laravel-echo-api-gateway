@@ -79,6 +79,40 @@ it('can unsubscribe from a channel', function () {
     ], $context);
 });
 
+it('can broadcast a whisper', function () {
+    app()->instance(SubscriptionRepository::class, Mockery::mock(SubscriptionRepository::class, function ($mock) {
+        /** @var Mock $mock */
+        $mock->shouldReceive('getConnectionIdsForChannel')->withArgs(function (string $channel): bool {
+            return $channel === 'test-channel';
+        })->once()
+        ->andReturn(collect(['connection-id-1', 'connection-id-2']));
+    }));
+
+    app()->instance(ConnectionRepository::class, Mockery::mock(ConnectionRepository::class, function ($mock) {
+        /** @var Mock $mock */
+        $mock->shouldReceive('sendMessage')->withArgs(function (string $connectionId, string $data): bool {
+            return $connectionId === 'connection-id-2' and $data === '{"event":"client-test","channel":"test-channel","data":"whisper"}';
+        })->once();
+    }));
+
+    /** @var Handler $handler */
+    $handler = app(Handler::class);
+
+    $context = new Context('request-id-1', 50_000, 'function-arn', 'trace-id-1');
+
+    $handler->handle([
+        'requestContext' => [
+            'routeKey' => 'my-test-route-key',
+            'eventType' => 'MESSAGE',
+            'connectionId' => 'connection-id-1',
+            'domainName' => 'test-domain',
+            'apiId' => 'api-id-1',
+            'stage' => 'stage-test',
+        ],
+        'body' => json_encode(['event' => 'client-test', 'channel' => 'test-channel', 'data'=>'whisper']),
+    ], $context);
+});
+
 it('handles dropped connections', function () {
     $mock = new MockHandler();
 
