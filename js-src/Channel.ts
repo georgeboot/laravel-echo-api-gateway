@@ -1,7 +1,7 @@
-import {EventFormatter} from 'laravel-echo/src/util';
-import {Channel as BaseChannel} from 'laravel-echo/src/channel/channel';
-import {PresenceChannel} from "laravel-echo/src/channel";
-import {Websocket} from "./Websocket";
+import { EventFormatter } from 'laravel-echo/src/util';
+import { Channel as BaseChannel } from 'laravel-echo/src/channel/channel';
+import { PresenceChannel } from "laravel-echo/src/channel";
+import { Websocket } from "./Websocket";
 
 /**
  * This class represents a Pusher channel.
@@ -105,9 +105,12 @@ export class Channel extends BaseChannel implements PresenceChannel {
     }
 
     whisper(event: string, data: object): Channel {
+        let channel = this.name;
+        let formattedEvent = "client-" + event;
         this.socket.send({
-            event,
+            "event": formattedEvent,
             data,
+            channel,
         })
 
         return this;
