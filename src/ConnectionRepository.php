@@ -30,7 +30,10 @@ class ConnectionRepository
             ]);
         } catch (ApiGatewayManagementApiException $e) {
             // GoneException: The connection with the provided id no longer exists.
-            if ($e->getStatusCode() === Response::HTTP_GONE) {
+            if (
+                $e->getStatusCode() === Response::HTTP_GONE ||
+                $e->getAwsErrorCode() === 'GoneException'
+            ) {
                 $this->subscriptionRepository->clearConnection($connectionId);
 
                 return;

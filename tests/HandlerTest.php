@@ -163,7 +163,7 @@ it('leaves presence channels', function () {
     ], $context);
 });
 
-it('handles dropped connections', function () {
+it('handles dropped connections with HTTP_GONE', function () {
     $mock = new MockHandler();
 
     $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
@@ -174,6 +174,29 @@ it('handles dropped connections', function () {
         return new  ApiGatewayManagementApiException('', $cmd, [
             'response' => $mock
         ]);
+    });
+
+    /** @var SubscriptionRepository */
+    $subscriptionRepository = Mockery::mock(SubscriptionRepository::class, function ($mock) {
+        /** @var Mock $mock */
+        $mock->shouldReceive('clearConnection')->withArgs(function (string $connectionId): bool {
+            return $connectionId === 'dropped-connection-id-1234';
+        })->once();
+    });
+
+    $config = config('laravel-echo-api-gateway');
+
+    /** @var ConnectionRepository */
+    $connectionRepository = new ConnectionRepository($subscriptionRepository, array_merge_recursive(['connection' => ['handler' => $mock]], $config));
+
+    $connectionRepository->sendMessage('dropped-connection-id-1234', 'test-message');
+});
+
+it('handles dropped connections with GoneException', function () {
+    $mock = new MockHandler();
+
+    $mock->append(function (CommandInterface $cmd, RequestInterface $req) {
+        return new  ApiGatewayManagementApiException('', $cmd, ['code' => 'GoneException']);
     });
 
     /** @var SubscriptionRepository */
