@@ -117,7 +117,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
     }
 
     here(callback: Function): Channel {
-        // TODO: implement
+        this.on('subscription_succeeded', (data) => {
+            callback(data)
+        })
 
         return this
     }
@@ -126,7 +128,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Listen for someone joining the channel.
      */
     joining(callback: Function): Channel {
-        // TODO: implement
+        this.on('member_added', (data) => {
+            callback(data)
+        })
 
         return this
     }
@@ -135,7 +139,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Listen for someone leaving the channel.
      */
     leaving(callback: Function): Channel {
-        // TODO: implement
+        this.on('member_removed', (data) => {
+            callback(data)
+        })
 
         return this
     }
