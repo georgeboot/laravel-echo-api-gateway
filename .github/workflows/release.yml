@@ -2,7 +2,7 @@ name: Publish new release
 
 on:
   release:
-    types: [ published ]
+    types: [published]
 
 jobs:
   release:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.target_commitish }}
       - name: Use Node.js 12
