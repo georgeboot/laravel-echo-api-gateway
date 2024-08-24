@@ -7,3 +7,4 @@ vendor/
 .idea/
 .phpunit.result.cache
 yarn-error.log
+.DS_Store
