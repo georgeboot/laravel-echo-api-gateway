@@ -1,67 +1,64 @@
 {
-  "name": "georgeboot/laravel-echo-api-gateway",
-  "description": "Use Laravel Echo with API Gateway Websockets",
-  "keywords": [
-      "laravel",
-      "echo",
-      "websockets",
-      "bref",
-      "serverless",
-      "laravel vapor"
-  ],
-  "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
-  "type": "library",
-  "license": "MIT",
-  "authors": [
-      {
-          "name": "George Boot",
-          "email": "george@famboot.nl"
-      }
-  ],
-  "require": {
-      "php": "^8.0|^8.1|^8.2",
-      "ext-json": "*",
-      "aws/aws-sdk-php": "^3.308",
-      "bref/bref": "^1.1",
-      "guzzlehttp/guzzle": "^6.3|^7.0",
-      "laravel/framework": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0"
-  },
-  "require-dev": {
-      "mockery/mockery": "^1.2",
-      "nunomaduro/larastan": "^0.7",
-      "orchestra/testbench": "^6.9",
-      "pestphp/pest": "^1.0",
-      "phpunit/phpunit": "^8.0|^9.0"
-  },
-  "autoload": {
-      "psr-4": {
-          "Georgeboot\\LaravelEchoApiGateway\\": "src/"
-      }
-  },
-  "autoload-dev": {
-      "psr-4": {
-          "Tests\\": "tests/"
-      }
-  },
-  "scripts": {
-      "test": "vendor/bin/phpunit"
-  },
-  "extra": {
-      "laravel": {
-          "providers": [
-              "Georgeboot\\LaravelEchoApiGateway\\ServiceProvider"
-          ]
-      }
-  },
-  "config": {
-      "sort-packages": true,
-      "platform": {
-          "php": "8.0.12"
-      },
-      "allow-plugins": {
-          "pestphp/pest-plugin": true
-      }
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "name": "georgeboot/laravel-echo-api-gateway",
+    "description": "Use Laravel Echo with API Gateway Websockets",
+    "keywords": [
+        "laravel",
+        "echo",
+        "websockets",
+        "bref",
+        "serverless",
+        "laravel vapor"
+    ],
+    "homepage": "https://github.com/georgeboot/laravel-echo-api-gateway",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "George Boot",
+            "email": "george@famboot.nl"
+        }
+    ],
+    "require": {
+        "php": "^8.0|^8.1|^8.2",
+        "ext-json": "*",
+        "aws/aws-sdk-php": "^3.308",
+        "bref/bref": "^1.1",
+        "guzzlehttp/guzzle": "^6.3|^7.0",
+        "laravel/framework": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.2",
+        "nunomaduro/larastan": "^0.7",
+        "orchestra/testbench": "^6.9",
+        "pestphp/pest": "^1.0",
+        "phpunit/phpunit": "^8.0|^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Georgeboot\\LaravelEchoApiGateway\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Georgeboot\\LaravelEchoApiGateway\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.0.12"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
