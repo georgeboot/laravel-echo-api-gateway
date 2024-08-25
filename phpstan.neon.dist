@@ -3,6 +3,8 @@ includes:
 
 parameters:
 
+    phpVersion: 81270
+
     paths:
         - src
         - tests
