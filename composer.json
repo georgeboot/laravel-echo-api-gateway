@@ -19,7 +19,7 @@
         }
     ],
     "require": {
-        "php": "^8.0|^8.1|^8.2",
+        "php": "^8.1|^8.2",
         "ext-json": "*",
         "aws/aws-sdk-php": "^3.308",
         "bref/bref": "^1.1",
