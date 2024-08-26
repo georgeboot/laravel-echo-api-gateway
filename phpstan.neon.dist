@@ -3,7 +3,7 @@ includes:
 
 parameters:
 
-    phpVersion: 81270
+    phpVersion: 80399
 
     paths:
         - src
