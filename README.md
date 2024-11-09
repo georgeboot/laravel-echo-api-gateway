@@ -3,15 +3,6 @@
 [![CI](https://github.com/georgeboot/laravel-echo-api-gateway/workflows/CI/badge.svg?event=push)](https://github.com/georgeboot/laravel-echo-api-gateway/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/georgeboot/laravel-echo-api-gateway/branch/master/graph/badge.svg?token=UVIA3FBQPP)](https://codecov.io/gh/georgeboot/laravel-echo-api-gateway)
 
-## Not maintained!!!
-I currently don't have the time to maintain this package.
-
-My recommendation is to use Soketi serverless instead: https://renoki-25232877.hubspotpagebuilder.eu/soketi-serverless
-
-Basically free to use and very well build.
-
----
-
 This package enables you to use API Gateway‘s Websockets as a driver for [Laravel Echo](https://github.com/laravel/echo)
 , so you don’t have to use services like Pusher or Socket.io.
 
