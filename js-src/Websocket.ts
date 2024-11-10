@@ -1,5 +1,6 @@
-import {Channel} from "./Channel";
-import {AxiosResponse} from "axios";
+import { AxiosResponse } from "axios";
+import axios from 'axios';
+import { Channel } from "./Channel";
 
 export type Options = { authEndpoint: string, host: string };
 export type MessageBody = { event: string, channel?: string, data: object };
@@ -19,14 +20,20 @@ export class Websocket {
 
     private socketId: string;
 
+    private closing = false;
+
     private pingInterval: NodeJS.Timeout;
 
-    constructor(options: Options) {
-        this.options = options;
+    private connect(host: string): void {
+        console.log('Connecting');
 
-        this.websocket = new WebSocket(options.host)
+        this.websocket = new WebSocket(host)
 
         this.websocket.onopen = () => {
+            this.send({
+                event: 'whoami',
+            })
+
             while (this.buffer.length) {
                 const message = this.buffer[0]
 
@@ -56,7 +63,19 @@ export class Websocket {
             if (this.internalListeners[message.event]) {
                 this.internalListeners[message.event](message.data)
             }
+
         }
+
+
+        this.websocket.onclose = () => {
+            if (this.socketId && !this.closing || !this.socketId) {
+                console.info('Connection lost, reconnecting...');
+                setTimeout(() => {
+                    this.socketId = undefined
+                    this.connect(host)
+                }, 1000);
+            }
+        };
 
         this.on('whoami', ({ socket_id: socketId }) => {
             this.socketId = socketId
@@ -72,18 +91,23 @@ export class Websocket {
             }
         })
 
-        this.send({
-            event: 'whoami',
-        })
 
         // send ping every 60 seconds to keep connection alive
         this.pingInterval = setInterval(() => {
-            console.log('Sending ping')
-
-            this.send({
-                event: 'ping',
-            })
+            if (this.websocket.readyState === this.websocket.OPEN) {
+                console.log('Sending ping')
+                this.send({
+                    event: 'ping',
+                })
+            }
         }, 60 * 1000)
+
+    }
+
+    constructor(options: Options) {
+        this.options = options;
+
+        this.connect(this.options.host);
 
         return this
     }
@@ -115,7 +139,8 @@ export class Websocket {
         this.buffer.push(message)
     }
 
-    close (): void {
+    close(): void {
+        this.closing = true
         this.internalListeners = {}
 
         clearInterval(this.pingInterval)
@@ -146,7 +171,7 @@ export class Websocket {
                     event: 'subscribe',
                     data: {
                         channel: channel.name,
-                        ... response.data
+                        ...response.data
                     },
                 })
             }).catch((error) => {

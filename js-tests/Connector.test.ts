@@ -2,11 +2,14 @@ import WS from "jest-websocket-mock";
 import { Connector } from "../js-src/Connector";
 import { Channel } from "../js-src/Channel";
 
+const mockedHost = 'ws://localhost:1234';
+
 describe('Connector', () => {
     let server: WS;
 
     beforeEach(() => {
-        server = new WS("ws://localhost:1234");
+        jest.useRealTimers();
+        server = new WS(mockedHost);
     });
 
     afterEach(() => {
@@ -15,7 +18,7 @@ describe('Connector', () => {
 
     test('socket id is correctly set', async () => {
         const connector = new Connector({
-            host: "ws://localhost:1234",
+            host: mockedHost,
         })
 
         await server.connected;
@@ -26,9 +29,29 @@ describe('Connector', () => {
         expect(connector.socketId()).toBe('test-socket-id')
     })
 
+    test('we reconnect to the server on error', async () => {
+        const connector = new Connector({
+            host: mockedHost,
+        })
+
+        await server.connected;
+        await expect(server).toReceiveMessage('{"event":"whoami"}');
+        server.send('{"event":"whoami","data":{"socket_id":"test-socket-id"}}')
+
+        server.close();
+        await server.closed;
+        server.server.stop(() => (server = new WS(mockedHost)));
+
+        await server.connected;
+        await expect(server).toReceiveMessage('{"event":"whoami"}');
+        server.send('{"event":"whoami","data":{"socket_id":"test-socket-id2"}}')
+
+        expect(connector.socketId()).toBe('test-socket-id2')
+    })
+
     test('we can subscribe to a channel and listen to events', async () => {
         const connector = new Connector({
-            host: "ws://localhost:1234",
+            host: mockedHost,
         })
 
         await server.connected;
@@ -57,7 +80,7 @@ describe('Connector', () => {
 
     test('we can send a whisper event', async () => {
         const connector = new Connector({
-            host: "ws://localhost:1234",
+            host: mockedHost,
         })
 
         await server.connected;
