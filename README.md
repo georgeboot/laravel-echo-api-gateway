@@ -21,7 +21,7 @@ advised to only use this package for non-critical / non-production projects.
 In order to use this package, your project needs to meet the following criteria:
 
 - PHP 7.4 or 8.x
-- Laravel 6, 7 or 8
+- Laravel 6 to 11
 - Uses either [bref](https://bref.sh) or [Laravel Vapor](https://vapor.laravel.com) to deploy to AWS
 - Has a working queue
 - Uses Laravel Mix or any other tool to bundle your assets
@@ -120,6 +120,7 @@ provider:
 
     environment:
         # Add these variables
+        # Please note : in Laravel 11, this setting is now BROADCAST_CONNECTION
         BROADCAST_DRIVER: laravel-echo-api-gateway
         LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE: !Ref ConnectionsTable
         LARAVEL_ECHO_API_GATEWAY_API_ID: !Ref WebsocketsApi
