@@ -196,6 +196,8 @@ window.Echo = new Echo({
     broadcaster,
     // replace the placeholders
     host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
+    authEndpoint: '{auth-url}/broadcasting/auth', // Optional: Use if you have a separate authentication endpoint
+    bearerToken: '{token}', // Optional: Use if you need a Bearer Token for authentication
 });
 ```
 
