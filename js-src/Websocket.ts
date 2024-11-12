@@ -136,9 +136,15 @@ export class Websocket {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
             console.log(`Sending auth request for channel ${channel.name}`)
 
+            if (this.options.bearerToken) {
+              this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
+            }
+
             axios.post(this.options.authEndpoint, {
                 socket_id: this.getSocketId(),
                 channel_name: channel.name,
+            }, {
+              headers: this.options.auth.headers || {}
             }).then((response: AxiosResponse) => {
                 console.log(`Subscribing to channels ${channel.name}`)
 
