@@ -25,7 +25,6 @@ export class Websocket {
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        console.log('Connecting');
 
         this.websocket = new WebSocket(host)
 
@@ -51,8 +50,6 @@ export class Websocket {
             }
 
             if (message.channel) {
-                console.log(`Received event ${message.event} on channel ${message.channel}`)
-
                 if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
                     this.listeners[message.channel][message.event](message.data)
                 }
@@ -69,7 +66,6 @@ export class Websocket {
 
         this.websocket.onclose = () => {
             if (this.socketId && !this.closing || !this.socketId) {
-                console.info('Connection lost, reconnecting...');
                 setTimeout(() => {
                     this.socketId = undefined
                     this.connect(host)
@@ -79,8 +75,6 @@ export class Websocket {
 
         this.on('whoami', ({ socket_id: socketId }) => {
             this.socketId = socketId
-
-            console.log(`just set socketId to ${socketId}`)
 
             while (this.channelBacklog.length) {
                 const channel = this.channelBacklog[0]
@@ -95,7 +89,6 @@ export class Websocket {
         // send ping every 60 seconds to keep connection alive
         this.pingInterval = setInterval(() => {
             if (this.websocket.readyState === this.websocket.OPEN) {
-                console.log('Sending ping')
                 this.send({
                     event: 'ping',
                 })
@@ -116,7 +109,7 @@ export class Websocket {
         try {
             return JSON.parse(body)
         } catch (error) {
-            console.error(error)
+            console.error('Error parsing message', error)
 
             return undefined
         }
@@ -159,13 +152,11 @@ export class Websocket {
 
     private actuallySubscribe(channel: Channel): void {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
-            console.log(`Sending auth request for channel ${channel.name}`)
 
             axios.post(this.options.authEndpoint, {
                 socket_id: this.getSocketId(),
                 channel_name: channel.name,
             }).then((response: AxiosResponse) => {
-                console.log(`Subscribing to channels ${channel.name}`)
 
                 this.send({
                     event: 'subscribe',
@@ -175,11 +166,9 @@ export class Websocket {
                     },
                 })
             }).catch((error) => {
-                console.log(`Auth request for channel ${channel.name} failed`)
-                console.error(error)
+                console.error('Error while subscribing to private channel :',error)
             })
         } else {
-            console.log(`Subscribing to channels ${channel.name}`)
 
             this.send({
                 event: 'subscribe',
