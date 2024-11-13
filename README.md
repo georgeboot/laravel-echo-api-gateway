@@ -200,4 +200,19 @@ window.Echo = new Echo({
 });
 ```
 
+You can also enable console output by passing a `debug: true` otpion to your window.Echo intializer : 
+```js
+import Echo from 'laravel-echo';
+import {broadcaster} from 'laravel-echo-api-gateway';
+
+window.Echo = new Echo({
+    broadcaster,
+    // replace the placeholders
+    host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
+    debug: true
+});
+```
+
+
+
 Lastly, you have to generate your assets by running Laravel Mix. After this step, you should be up and running.
