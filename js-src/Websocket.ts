@@ -1,7 +1,7 @@
 import {Channel} from "./Channel";
 import {AxiosResponse} from "axios";
 
-export type Options = { authEndpoint: string, host: string };
+export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any };
 export type MessageBody = { event: string, channel?: string, data: object };
 
 export class Websocket {
@@ -137,7 +137,7 @@ export class Websocket {
             console.log(`Sending auth request for channel ${channel.name}`)
 
             if (this.options.bearerToken) {
-              this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
+                this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
             }
 
             axios.post(this.options.authEndpoint, {
