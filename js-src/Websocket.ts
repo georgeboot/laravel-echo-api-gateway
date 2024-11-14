@@ -1,7 +1,9 @@
-import {Channel} from "./Channel";
-import {AxiosResponse} from "axios";
+import { AxiosResponse } from "axios";
+import axios from 'axios';
+import { Channel } from "./Channel";
 
-export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any };
+export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any, debug: boolean };
+
 export type MessageBody = { event: string, channel?: string, data: object };
 
 export class Websocket {
@@ -19,14 +21,20 @@ export class Websocket {
 
     private socketId: string;
 
+    private closing = false;
+
     private pingInterval: NodeJS.Timeout;
 
-    constructor(options: Options) {
-        this.options = options;
+    private connect(host: string): void {
+        this.options.debug && console.log('Connecting');
 
-        this.websocket = new WebSocket(options.host)
+        this.websocket = new WebSocket(host)
 
         this.websocket.onopen = () => {
+            this.send({
+                event: 'whoami',
+            })
+
             while (this.buffer.length) {
                 const message = this.buffer[0]
 
@@ -44,7 +52,7 @@ export class Websocket {
             }
 
             if (message.channel) {
-                console.log(`Received event ${message.event} on channel ${message.channel}`)
+                this.options.debug && console.log(`Received event ${message.event} on channel ${message.channel}`)
 
                 if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
                     this.listeners[message.channel][message.event](message.data)
@@ -56,12 +64,24 @@ export class Websocket {
             if (this.internalListeners[message.event]) {
                 this.internalListeners[message.event](message.data)
             }
+
         }
+
+
+        this.websocket.onclose = () => {
+            if (this.socketId && !this.closing || !this.socketId) {
+                this.options.debug && console.info('Connection lost, reconnecting...');
+                setTimeout(() => {
+                    this.socketId = undefined
+                    this.connect(host)
+                }, 1000);
+            }
+        };
 
         this.on('whoami', ({ socket_id: socketId }) => {
             this.socketId = socketId
 
-            console.log(`just set socketId to ${socketId}`)
+            this.options.debug && console.log(`just set socketId to ${socketId}`)
 
             while (this.channelBacklog.length) {
                 const channel = this.channelBacklog[0]
@@ -72,18 +92,23 @@ export class Websocket {
             }
         })
 
-        this.send({
-            event: 'whoami',
-        })
 
         // send ping every 60 seconds to keep connection alive
         this.pingInterval = setInterval(() => {
-            console.log('Sending ping')
-
-            this.send({
-                event: 'ping',
-            })
+            if (this.websocket.readyState === this.websocket.OPEN) {
+                this.options.debug && console.log('Sending ping')
+                this.send({
+                    event: 'ping',
+                })
+            }
         }, 60 * 1000)
+
+    }
+
+    constructor(options: Options) {
+        this.options = options;
+
+        this.connect(this.options.host);
 
         return this
     }
@@ -92,7 +117,7 @@ export class Websocket {
         try {
             return JSON.parse(body)
         } catch (error) {
-            console.error(error)
+            this.options.debug && console.error(error)
 
             return undefined
         }
@@ -115,7 +140,8 @@ export class Websocket {
         this.buffer.push(message)
     }
 
-    close (): void {
+    close(): void {
+        this.closing = true
         this.internalListeners = {}
 
         clearInterval(this.pingInterval)
@@ -134,7 +160,7 @@ export class Websocket {
 
     private actuallySubscribe(channel: Channel): void {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
-            console.log(`Sending auth request for channel ${channel.name}`)
+            this.options.debug && console.log(`Sending auth request for channel ${channel.name}`)
 
             if (this.options.bearerToken) {
                 this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
@@ -146,21 +172,21 @@ export class Websocket {
             }, {
               headers: this.options.auth.headers || {}
             }).then((response: AxiosResponse) => {
-                console.log(`Subscribing to channels ${channel.name}`)
+                this.options.debug && console.log(`Subscribing to channels ${channel.name}`)
 
                 this.send({
                     event: 'subscribe',
                     data: {
                         channel: channel.name,
-                        ... response.data
+                        ...response.data
                     },
                 })
             }).catch((error) => {
-                console.log(`Auth request for channel ${channel.name} failed`)
-                console.error(error)
+                this.options.debug && console.log(`Auth request for channel ${channel.name} failed`)
+                this.options.debug && console.error(error)
             })
         } else {
-            console.log(`Subscribing to channels ${channel.name}`)
+            this.options.debug && console.log(`Subscribing to channels ${channel.name}`)
 
             this.send({
                 event: 'subscribe',

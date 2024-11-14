@@ -22,7 +22,7 @@
         "php": "^8.0|^8.1|^8.2",
         "ext-json": "*",
         "aws/aws-sdk-php": "^3.308",
-        "bref/bref": "^1.1",
+        "bref/bref": "^1.1|^2.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
         "laravel/framework": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0"
     },
