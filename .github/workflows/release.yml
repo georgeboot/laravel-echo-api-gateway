@@ -24,7 +24,7 @@ jobs:
       - run: yarn version --new-version ${{ github.event.release.tag_name }} --no-git-tag-version
       #      - run: yarn run build
       #      - run: yarn test
-      - run: yarn publish --access public --tag latest
+      - run: yarn publish --verbose --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: git add package.json
