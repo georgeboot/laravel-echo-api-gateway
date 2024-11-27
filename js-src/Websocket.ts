@@ -21,15 +21,27 @@ export class Websocket {
     private socketId: string;
 
     private closing = false;
+    private hasConnected = false;
 
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        this.options.debug && console.log('Connecting');
+        this.options.debug && console.log('Trying to connect...');
 
         this.websocket = new WebSocket(host)
 
+        this.websocket.onerror = () => {
+            if (!this.hasConnected) {
+                setTimeout(() => {
+                    this.socketId = undefined
+                    this.connect(host)
+                }, 3000);
+            }
+        }
+
         this.websocket.onopen = () => {
+            this.options.debug && console.log('Connected !');
+            this.hasConnected = true;
             this.send({
                 event: 'whoami',
             })
@@ -41,40 +53,56 @@ export class Websocket {
 
                 this.buffer.splice(0, 1)
             }
-        }
 
-        this.websocket.onmessage = (messageEvent: MessageEvent) => {
-            const message = this.parseMessage(messageEvent.data)
+            // Register events only once connected, or they won't be registered if connection failed/lost
 
-            if (!message) {
-                return
-            }
+            this.websocket.onmessage = (messageEvent: MessageEvent) => {
+                const message = this.parseMessage(messageEvent.data)
+                this.options.debug && console.log('onmessage', messageEvent.data)
 
-            if (message.channel) {
-                this.options.debug && console.log(`Received event ${message.event} on channel ${message.channel}`)
-
-                if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
-                    this.listeners[message.channel][message.event](message.data)
+                if (!message) {
+                    return
                 }
 
-                return
+                if (message.channel) {
+                    this.options.debug && console.log(`Received event ${message.event} on channel ${message.channel}`)
+
+                    if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
+                        this.listeners[message.channel][message.event](message.data)
+                    }
+
+                    return
+                }
+
+                if (this.internalListeners[message.event]) {
+                    this.internalListeners[message.event](message.data)
+                }
             }
 
-            if (this.internalListeners[message.event]) {
-                this.internalListeners[message.event](message.data)
-            }
 
+            // send ping every 60 seconds to keep connection alive
+            this.pingInterval = setInterval(() => {
+                if (this.websocket.readyState === this.websocket.OPEN) {
+                    this.options.debug && console.log('Sending ping')
+                    this.send({
+                        event: 'ping',
+                    })
+                }
+            }, 60 * 1000)
         }
 
 
         this.websocket.onclose = () => {
-            if (this.socketId && !this.closing || !this.socketId) {
-                this.options.debug && console.info('Connection lost, reconnecting...');
-                setTimeout(() => {
-                    this.socketId = undefined
-                    this.connect(host)
-                }, 1000);
+            this.options.debug && console.info('Connection closed.');
+            if (this.closing){
+                return;
             }
+            this.hasConnected = false
+            this.options.debug && console.info('Connection lost, reconnecting...');
+            setTimeout(() => {
+                this.socketId = undefined
+                this.connect(host)
+            }, 1000);
         };
 
         this.on('whoami', ({ socket_id: socketId }) => {
@@ -82,25 +110,14 @@ export class Websocket {
 
             this.options.debug && console.log(`just set socketId to ${socketId}`)
 
-            while (this.channelBacklog.length) {
-                const channel = this.channelBacklog[0]
-
+            // Handle the backlog and don't empty it, we'll need it if we lose connection
+            let channel: Channel;
+            for(channel of this.channelBacklog){
                 this.actuallySubscribe(channel)
-
-                this.channelBacklog.splice(0, 1)
             }
+
         })
 
-
-        // send ping every 60 seconds to keep connection alive
-        this.pingInterval = setInterval(() => {
-            if (this.websocket.readyState === this.websocket.OPEN) {
-                this.options.debug && console.log('Sending ping')
-                this.send({
-                    event: 'ping',
-                })
-            }
-        }, 60 * 1000)
 
     }
 
