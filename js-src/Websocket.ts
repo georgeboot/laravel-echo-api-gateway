@@ -5,6 +5,8 @@ export type Options = { authEndpoint: string, host: string, bearerToken: string,
 
 export type MessageBody = { event: string, channel?: string, data: object };
 
+const LOG_PREFIX = '[AG-WS] ';
+
 export class Websocket {
     buffer: Array<object> = [];
 
@@ -12,7 +14,7 @@ export class Websocket {
 
     websocket: WebSocket;
 
-    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {}
+    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {};
 
     private internalListeners: { [eventName: string]: Function } = {};
 
@@ -26,12 +28,14 @@ export class Websocket {
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        this.options.debug && console.log('Trying to connect...');
+        this.options.debug && console.log(LOG_PREFIX + 'Trying to connect...');
 
         this.websocket = new WebSocket(host);
 
         this.websocket.onerror = () => {
+
             if (!this.hasConnected) {
+
                 setTimeout(() => {
                     this.socketId = undefined;
                     this.connect(host);
@@ -40,7 +44,7 @@ export class Websocket {
         };
 
         this.websocket.onopen = () => {
-            this.options.debug && console.log('Connected !');
+            this.options.debug && console.log(LOG_PREFIX + 'Connected !');
             this.hasConnected = true;
 
             this.send({
@@ -48,25 +52,25 @@ export class Websocket {
             });
 
             while (this.buffer.length) {
-                const message = this.buffer[0]
+                const message = this.buffer[0];
 
-                this.send(message)
+                this.send(message);
 
-                this.buffer.splice(0, 1)
+                this.buffer.splice(0, 1);
             };
 
             // Register events only once connected, or they won't be registered if connection failed/lost
 
             this.websocket.onmessage = (messageEvent: MessageEvent) => {
                 const message = this.parseMessage(messageEvent.data);
-                this.options.debug && console.log('onmessage', messageEvent.data);
+                this.options.debug && console.log(LOG_PREFIX + 'onmessage', messageEvent.data);
 
                 if (!message) {
                     return;
                 }
 
                 if (message.channel) {
-                    this.options.debug && console.log(`Received event ${message.event} on channel ${message.channel}`);
+                    this.options.debug && console.log(`${LOG_PREFIX} Received event ${message.event} on channel ${message.channel}`);
 
                     if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
                         this.listeners[message.channel][message.event](message.data);
@@ -84,7 +88,7 @@ export class Websocket {
             // send ping every 60 seconds to keep connection alive
             this.pingInterval = setInterval(() => {
                 if (this.websocket.readyState === this.websocket.OPEN) {
-                    this.options.debug && console.log('Sending ping');
+                    this.options.debug && console.log(LOG_PREFIX + 'Sending ping');
 
                     this.send({
                         event: 'ping',
@@ -113,7 +117,7 @@ export class Websocket {
         this.on('whoami', ({ socket_id: socketId }) => {
             this.socketId = socketId;
 
-            this.options.debug && console.log(`just set socketId to ${socketId}`);
+            this.options.debug && console.log(`${LOG_PREFIX} just set socketId to ${socketId}`);
 
             // Handle the backlog and don't empty it, we'll need it if we lose connection
             let channel: Channel;
@@ -179,7 +183,7 @@ export class Websocket {
 
     private actuallySubscribe(channel: Channel): void {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
-            this.options.debug && console.log(`Sending auth request for channel ${channel.name}`);
+            this.options.debug && console.log(`${LOG_PREFIX} Sending auth request for channel ${channel.name}`);
 
             if (this.options.bearerToken) {
                 this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
@@ -191,7 +195,7 @@ export class Websocket {
             }, {
               headers: this.options.auth.headers || {}
             }).then((response: AxiosResponse) => {
-                this.options.debug && console.log(`Subscribing to channels ${channel.name}`);
+                this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channels ${channel.name}`);
 
                 this.send({
                     event: 'subscribe',
@@ -201,11 +205,11 @@ export class Websocket {
                     },
                 });
             }).catch((error) => {
-                this.options.debug && console.log(`Auth request for channel ${channel.name} failed`);
+                this.options.debug && console.log(`${LOG_PREFIX} Auth request for channel ${channel.name} failed`);
                 this.options.debug && console.error(error);
             })
         } else {
-            this.options.debug && console.log(`Subscribing to channels ${channel.name}`);
+            this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channels ${channel.name}`);
 
             this.send({
                 event: 'subscribe',
