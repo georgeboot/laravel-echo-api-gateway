@@ -5,7 +5,7 @@ export type Options = { authEndpoint: string, host: string, bearerToken: string,
 
 export type MessageBody = { event: string, channel?: string, data: object };
 
-const LOG_PREFIX = '[AG-WS] ';
+const LOG_PREFIX = '[AG-WS]';
 
 export class Websocket {
     buffer: Array<object> = [];
@@ -28,7 +28,7 @@ export class Websocket {
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        this.options.debug && console.log(LOG_PREFIX + 'Trying to connect...');
+        this.options.debug && console.log(LOG_PREFIX + ' Trying to connect...');
 
         this.websocket = new WebSocket(host);
 
@@ -44,7 +44,7 @@ export class Websocket {
         };
 
         this.websocket.onopen = () => {
-            this.options.debug && console.log(LOG_PREFIX + 'Connected !');
+            this.options.debug && console.log(LOG_PREFIX + ' Connected !');
             this.hasConnected = true;
 
             this.send({
@@ -63,7 +63,7 @@ export class Websocket {
 
             this.websocket.onmessage = (messageEvent: MessageEvent) => {
                 const message = this.parseMessage(messageEvent.data);
-                this.options.debug && console.log(LOG_PREFIX + 'onmessage', messageEvent.data);
+                this.options.debug && console.log(LOG_PREFIX + ' onmessage', messageEvent.data);
 
                 if (!message) {
                     return;
@@ -88,7 +88,7 @@ export class Websocket {
             // send ping every 60 seconds to keep connection alive
             this.pingInterval = setInterval(() => {
                 if (this.websocket.readyState === this.websocket.OPEN) {
-                    this.options.debug && console.log(LOG_PREFIX + 'Sending ping');
+                    this.options.debug && console.log(LOG_PREFIX + ' Sending ping');
 
                     this.send({
                         event: 'ping',
@@ -117,7 +117,7 @@ export class Websocket {
         this.on('whoami', ({ socket_id: socketId }) => {
             this.socketId = socketId;
 
-            this.options.debug && console.log(`${LOG_PREFIX} just set socketId to ${socketId}`);
+            this.options.debug && console.log(`${LOG_PREFIX} Just set socketId to ${socketId}`);
 
             // Handle the backlog and don't empty it, we'll need it if we lose connection
             let channel: Channel;
@@ -195,7 +195,7 @@ export class Websocket {
             }, {
               headers: this.options.auth.headers || {}
             }).then((response: AxiosResponse) => {
-                this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channels ${channel.name}`);
+                this.options.debug && console.log(`${LOG_PREFIX} Subscribing to private channel ${channel.name}`);
 
                 this.send({
                     event: 'subscribe',
@@ -209,7 +209,7 @@ export class Websocket {
                 this.options.debug && console.error(error);
             })
         } else {
-            this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channels ${channel.name}`);
+            this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channel ${channel.name}`);
 
             this.send({
                 event: 'subscribe',
