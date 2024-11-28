@@ -1,6 +1,6 @@
 {
     "name": "laravel-echo-api-gateway",
-    "version": "0.1.2",
+    "version": "0.5.2",
     "description": "Use Laravel Echo with API Gateway Websockets",
     "keywords": [
         "laravel",
@@ -49,6 +49,7 @@
         "jest": "^24.9.0",
         "jest-websocket-mock": "^2.2.0",
         "laravel-echo": "^1.10.0",
+        "mock-socket": "^9.0.3",
         "rollup": "^2.10.2",
         "rollup-plugin-typescript2": "^0.27.1",
         "standard-version": "^8.0.1",

@@ -1,10 +1,11 @@
 import { AxiosResponse } from "axios";
-import axios from 'axios';
 import { Channel } from "./Channel";
 
 export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any, debug: boolean };
 
 export type MessageBody = { event: string, channel?: string, data: object };
+
+const LOG_PREFIX = '[AG-WS]';
 
 export class Websocket {
     buffer: Array<object> = [];
@@ -13,7 +14,7 @@ export class Websocket {
 
     websocket: WebSocket;
 
-    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {}
+    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {};
 
     private internalListeners: { [eventName: string]: Function } = {};
 
@@ -27,56 +28,59 @@ export class Websocket {
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        this.options.debug && console.log('Trying to connect...');
+        this.options.debug && console.log(LOG_PREFIX + ' Trying to connect...');
 
-        this.websocket = new WebSocket(host)
+        this.websocket = new WebSocket(host);
 
         this.websocket.onerror = () => {
+
             if (!this.hasConnected) {
+
                 setTimeout(() => {
-                    this.socketId = undefined
-                    this.connect(host)
+                    this.socketId = undefined;
+                    this.connect(host);
                 }, 3000);
             }
-        }
+        };
 
         this.websocket.onopen = () => {
-            this.options.debug && console.log('Connected !');
+            this.options.debug && console.log(LOG_PREFIX + ' Connected !');
             this.hasConnected = true;
+
             this.send({
                 event: 'whoami',
-            })
+            });
 
             while (this.buffer.length) {
-                const message = this.buffer[0]
+                const message = this.buffer[0];
 
-                this.send(message)
+                this.send(message);
 
-                this.buffer.splice(0, 1)
-            }
+                this.buffer.splice(0, 1);
+            };
 
             // Register events only once connected, or they won't be registered if connection failed/lost
 
             this.websocket.onmessage = (messageEvent: MessageEvent) => {
-                const message = this.parseMessage(messageEvent.data)
-                this.options.debug && console.log('onmessage', messageEvent.data)
+                const message = this.parseMessage(messageEvent.data);
+                this.options.debug && console.log(LOG_PREFIX + ' onmessage', messageEvent.data);
 
                 if (!message) {
-                    return
+                    return;
                 }
 
                 if (message.channel) {
-                    this.options.debug && console.log(`Received event ${message.event} on channel ${message.channel}`)
+                    this.options.debug && console.log(`${LOG_PREFIX} Received event ${message.event} on channel ${message.channel}`);
 
                     if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
-                        this.listeners[message.channel][message.event](message.data)
+                        this.listeners[message.channel][message.event](message.data);
                     }
 
-                    return
+                    return;
                 }
 
                 if (this.internalListeners[message.event]) {
-                    this.internalListeners[message.event](message.data)
+                    this.internalListeners[message.event](message.data);
                 }
             }
 
@@ -84,42 +88,44 @@ export class Websocket {
             // send ping every 60 seconds to keep connection alive
             this.pingInterval = setInterval(() => {
                 if (this.websocket.readyState === this.websocket.OPEN) {
-                    this.options.debug && console.log('Sending ping')
+                    this.options.debug && console.log(LOG_PREFIX + ' Sending ping');
+
                     this.send({
                         event: 'ping',
-                    })
+                    });
                 }
-            }, 60 * 1000)
+            }, 60 * 1000);
         }
 
 
         this.websocket.onclose = () => {
             this.options.debug && console.info('Connection closed.');
+
             if (this.closing){
                 return;
             }
-            this.hasConnected = false
+
+            this.hasConnected = false;
             this.options.debug && console.info('Connection lost, reconnecting...');
+
             setTimeout(() => {
-                this.socketId = undefined
-                this.connect(host)
+                this.socketId = undefined;
+                this.connect(host);
             }, 1000);
         };
 
         this.on('whoami', ({ socket_id: socketId }) => {
-            this.socketId = socketId
+            this.socketId = socketId;
 
-            this.options.debug && console.log(`just set socketId to ${socketId}`)
+            this.options.debug && console.log(`${LOG_PREFIX} Just set socketId to ${socketId}`);
 
             // Handle the backlog and don't empty it, we'll need it if we lose connection
             let channel: Channel;
+
             for(channel of this.channelBacklog){
-                this.actuallySubscribe(channel)
+                this.actuallySubscribe(channel);
             }
-
-        })
-
-
+        });
     }
 
     constructor(options: Options) {
@@ -127,57 +133,57 @@ export class Websocket {
 
         this.connect(this.options.host);
 
-        return this
+        return this;
     }
 
     protected parseMessage(body: string): MessageBody {
         try {
-            return JSON.parse(body)
+            return JSON.parse(body);
         } catch (error) {
-            this.options.debug && console.error(error)
+            this.options.debug && console.error(error);
 
-            return undefined
+            return undefined;
         }
     }
 
     getSocketId(): string {
-        return this.socketId
+        return this.socketId;
     }
 
     private socketIsReady(): boolean {
-        return this.websocket.readyState === this.websocket.OPEN
+        return this.websocket.readyState === this.websocket.OPEN;
     }
 
     send(message: object): void {
         if (this.socketIsReady()) {
-            this.websocket.send(JSON.stringify(message))
-            return
+            this.websocket.send(JSON.stringify(message));
+            return;
         }
 
-        this.buffer.push(message)
+        this.buffer.push(message);
     }
 
     close(): void {
-        this.closing = true
-        this.internalListeners = {}
+        this.closing = true;
+        this.internalListeners = {};
 
-        clearInterval(this.pingInterval)
-        this.pingInterval = undefined
+        clearInterval(this.pingInterval);
+        this.pingInterval = undefined;
 
-        this.websocket.close()
+        this.websocket.close();
     }
 
     subscribe(channel: Channel): void {
         if (this.getSocketId()) {
-            this.actuallySubscribe(channel)
+            this.actuallySubscribe(channel);
         } else {
-            this.channelBacklog.push(channel)
+            this.channelBacklog.push(channel);
         }
     }
 
     private actuallySubscribe(channel: Channel): void {
         if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
-            this.options.debug && console.log(`Sending auth request for channel ${channel.name}`)
+            this.options.debug && console.log(`${LOG_PREFIX} Sending auth request for channel ${channel.name}`);
 
             if (this.options.bearerToken) {
                 this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
@@ -189,7 +195,7 @@ export class Websocket {
             }, {
               headers: this.options.auth.headers || {}
             }).then((response: AxiosResponse) => {
-                this.options.debug && console.log(`Subscribing to channels ${channel.name}`)
+                this.options.debug && console.log(`${LOG_PREFIX} Subscribing to private channel ${channel.name}`);
 
                 this.send({
                     event: 'subscribe',
@@ -197,20 +203,20 @@ export class Websocket {
                         channel: channel.name,
                         ...response.data
                     },
-                })
+                });
             }).catch((error) => {
-                this.options.debug && console.log(`Auth request for channel ${channel.name} failed`)
-                this.options.debug && console.error(error)
+                this.options.debug && console.log(`${LOG_PREFIX} Auth request for channel ${channel.name} failed`);
+                this.options.debug && console.error(error);
             })
         } else {
-            this.options.debug && console.log(`Subscribing to channels ${channel.name}`)
+            this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channel ${channel.name}`);
 
             this.send({
                 event: 'subscribe',
                 data: {
                     channel: channel.name,
                 },
-            })
+            });
         }
     }
 
@@ -220,28 +226,28 @@ export class Websocket {
             data: {
                 channel: channel.name,
             },
-        })
+        });
 
         if (this.listeners[channel.name]) {
-            delete this.listeners[channel.name]
+            delete this.listeners[channel.name];
         }
     }
 
     on(event: string, callback: Function = null): void {
-        this.internalListeners[event] = callback
+        this.internalListeners[event] = callback;
     }
 
     bind(channel: Channel, event: string, callback: Function): void {
         if (!this.listeners[channel.name]) {
-            this.listeners[channel.name] = {}
+            this.listeners[channel.name] = {};
         }
 
-        this.listeners[channel.name][event] = callback
+        this.listeners[channel.name][event] = callback;
     }
 
     unbindEvent(channel: Channel, event: string, callback: Function = null): void {
         if (this.internalListeners[event] && (callback === null || this.internalListeners[event] === callback)) {
-            delete this.internalListeners[event]
+            delete this.internalListeners[event];
         }
     }
 }
