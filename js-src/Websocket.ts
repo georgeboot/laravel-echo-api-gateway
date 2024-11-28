@@ -1,5 +1,6 @@
 import { AxiosResponse } from "axios";
 import { Channel } from "./Channel";
+import axios from 'axios';
 
 export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any, debug: boolean };
 
@@ -28,7 +29,11 @@ export class Websocket {
     private pingInterval: NodeJS.Timeout;
 
     private connect(host: string): void {
-        this.options.debug && console.log(LOG_PREFIX + ' Trying to connect...');
+        if (!host) {
+            this.options.debug && console.error(LOG_PREFIX + `Cannont connect without host !`);
+            return;
+        }
+        this.options.debug && console.log(LOG_PREFIX + `Trying to connect to ${host}...` );
 
         this.websocket = new WebSocket(host);
 
@@ -57,7 +62,7 @@ export class Websocket {
                 this.send(message);
 
                 this.buffer.splice(0, 1);
-            };
+            }
 
             // Register events only once connected, or they won't be registered if connection failed/lost
 
