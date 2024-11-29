@@ -5,6 +5,10 @@ import {Channel} from "./Channel";
 export const broadcaster = (options: object): Connector => new Connector(options);
 
 export class Connector extends BaseConnector {
+
+    constructor(options: object) {
+        super(options);
+    }
     /**
      * The Socket.io connection instance.
      */
