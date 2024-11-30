@@ -1,6 +1,5 @@
 import { AxiosResponse } from "axios";
 import { Channel } from "./Channel";
-import axios from 'axios';
 
 export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any, debug: boolean };
 
