@@ -9,9 +9,8 @@ export class Connector extends BaseConnector {
     constructor(options: object) {
         super(options);
     }
-    /**
-     * The Socket.io connection instance.
-     */
+
+
     socket: Websocket;
 
     /**
@@ -19,9 +18,7 @@ export class Connector extends BaseConnector {
      */
     channels: { [name: string]: Channel } = {};
 
-    /**
-     * Create a fresh Socket.io connection.
-     */
+
     connect(): void {
         this.socket = new Websocket(this.options);
 
