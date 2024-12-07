@@ -57,9 +57,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: yarn install
+        run: npm install
       - name: Run ESLint
-        run: yarn run lint
+        run: npm run lint
 
   jest:
     runs-on: ubuntu-latest
@@ -70,9 +70,9 @@ jobs:
         with:
           node-version: '15'
       - name: Install dependencies
-        run: yarn install
+        run: npm install
       - name: Run Jest
-        run: yarn test --coverage --coverageDirectory=test-results/jest
+        run: npm run test --coverage --coverageDirectory=test-results/jest
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v1

@@ -18,13 +18,13 @@ jobs:
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
       - run: git config --global user.name "GitHub CD bot"
       - run: git config --global user.email "github-cd-bot@github.com"
-      - run: yarn version --new-version ${{ github.event.release.tag_name }} --no-git-tag-version
+      - run: npm --no-git-tag-version version ${{ github.event.release.tag_name }}
       #      - run: yarn run build
       #      - run: yarn test
-      - run: yarn publish --verbose --access public --tag latest
+      - run: npm publish --verbose --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: git add package.json
