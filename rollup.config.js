@@ -9,7 +9,10 @@ export default {
         { file: './dist/laravel-echo-api-gateway.iife.js', format: 'iife', name: 'LaravelEchoApiGateway' },
     ],
     plugins: [
-        typescript(),
+        typescript({
+            tsconfig: './tsconfig.json', // Chemin explicite vers votre fichier TypeScript
+            useTsconfigDeclarationDir: true, // Respecte les options `outDir` et `declarationDir`
+        }),
         babel({
             babelHelpers: 'bundled',
             exclude: 'node_modules/**',
