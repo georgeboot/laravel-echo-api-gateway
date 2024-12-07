@@ -4,6 +4,8 @@ import {Channel} from "./Channel";
 
 export const broadcaster = (options: object): Connector => new Connector(options);
 
+const LOG_PREFIX = '[LE-AG-Connector]';
+
 export class Connector extends BaseConnector {
     /**
      * The Socket.io connection instance.
@@ -16,9 +18,18 @@ export class Connector extends BaseConnector {
     channels: { [name: string]: Channel } = {};
 
     /**
+     * Create a new class instance.
+     */
+    constructor(options: any) {
+        super(options);
+    }
+
+    /**
      * Create a fresh Socket.io connection.
      */
     connect(): void {
+        this.options.debug && console.log(LOG_PREFIX + 'Connect ...' );
+
         this.socket = new Websocket(this.options);
 
         return;
@@ -103,6 +114,8 @@ export class Connector extends BaseConnector {
      * Disconnect socket connection.
      */
     disconnect(): void {
+        this.options.debug && console.log(LOG_PREFIX + 'Disconnect ...' );
+
         this.socket.close();
     }
 }

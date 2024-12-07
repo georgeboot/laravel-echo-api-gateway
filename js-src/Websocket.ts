@@ -5,7 +5,7 @@ export type Options = { authEndpoint: string, host: string, bearerToken: string,
 
 export type MessageBody = { event: string, channel?: string, data: object };
 
-const LOG_PREFIX = '[AG-WS]';
+const LOG_PREFIX = '[LE-AG-Websocket]';
 
 export class Websocket {
     buffer: Array<object> = [];
@@ -27,11 +27,22 @@ export class Websocket {
 
     private pingInterval: NodeJS.Timeout;
 
+    constructor(options: Options) {
+        this.options = options;
+
+        this.connect(this.options.host);
+
+        return this;
+    }
+
     private connect(host: string): void {
+
         if (!host) {
             this.options.debug && console.error(LOG_PREFIX + `Cannont connect without host !`);
+
             return;
         }
+
         this.options.debug && console.log(LOG_PREFIX + `Trying to connect to ${host}...` );
 
         this.websocket = new WebSocket(host);
@@ -132,14 +143,6 @@ export class Websocket {
         });
     }
 
-    constructor(options: Options) {
-        this.options = options;
-
-        this.connect(this.options.host);
-
-        return this;
-    }
-
     protected parseMessage(body: string): MessageBody {
         try {
             return JSON.parse(body);
@@ -181,6 +184,8 @@ export class Websocket {
         if (this.getSocketId()) {
             this.actuallySubscribe(channel);
         } else {
+            this.options.debug && console.log(`${LOG_PREFIX} subscribe - push channel backlog for channel ${channel.name}`);
+
             this.channelBacklog.push(channel);
         }
     }
@@ -225,6 +230,8 @@ export class Websocket {
     }
 
     unsubscribe(channel: Channel): void {
+        this.options.debug && console.log(`${LOG_PREFIX} unsubscribe for channel ${channel.name}`);
+
         this.send({
             event: 'unsubscribe',
             data: {
@@ -238,10 +245,14 @@ export class Websocket {
     }
 
     on(event: string, callback: Function = null): void {
+        this.options.debug && console.log(`${LOG_PREFIX} on event ${event} ...`);
+
         this.internalListeners[event] = callback;
     }
 
     bind(channel: Channel, event: string, callback: Function): void {
+        this.options.debug && console.log(`${LOG_PREFIX} bind event ${event} for channel ${channel.name} ...`);
+
         if (!this.listeners[channel.name]) {
             this.listeners[channel.name] = {};
         }
@@ -250,6 +261,8 @@ export class Websocket {
     }
 
     unbindEvent(channel: Channel, event: string, callback: Function = null): void {
+        this.options.debug && console.log(`${LOG_PREFIX} unbind event ${event} for channel ${channel.name} ...`);
+
         if (this.internalListeners[event] && (callback === null || this.internalListeners[event] === callback)) {
             delete this.internalListeners[event];
         }

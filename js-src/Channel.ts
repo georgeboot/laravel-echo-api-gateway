@@ -3,6 +3,8 @@ import { Channel as BaseChannel } from 'laravel-echo/src/channel/channel';
 import { PresenceChannel } from "laravel-echo/src/channel";
 import { Websocket } from "./Websocket";
 
+const LOG_PREFIX = '[LE-AG-Channel]';
+
 /**
  * This class represents a Pusher channel.
  */
@@ -45,6 +47,8 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Subscribe to a Pusher channel.
      */
     subscribe(): any {
+        this.options["debug"] && console.log(`${LOG_PREFIX} subscribe for channel ${this.name} ...`);
+
         this.socket.subscribe(this)
     }
 
@@ -52,13 +56,17 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Unsubscribe from a Pusher channel.
      */
     unsubscribe(): void {
+        this.options["debug"] && console.log(`${LOG_PREFIX} unsubscribe for channel ${this.name} ...`);
+
         this.socket.unsubscribe(this);
     }
 
     /**
      * Listen for an event on the channel instance.
      */
-    listen(event: string, callback: Function): Channel {
+    listen(event: string, callback: Function): this {
+        this.options["debug"] && console.log(`${LOG_PREFIX} listen to ${event} for channel ${this.name} ...`);
+
         this.on(this.eventFormatter.format(event), callback);
 
         return this;
@@ -67,7 +75,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Stop listening for an event on the channel instance.
      */
-    stopListening(event: string, callback?: Function): Channel {
+    stopListening(event: string, callback?: Function): this {
+        this.options["debug"] && console.log(`${LOG_PREFIX} stop listening to ${event} for channel ${this.name} ...`);
+
         this.socket.unbindEvent(this, event, callback)
 
         return this;
@@ -76,7 +86,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Register a callback to be called anytime a subscription succeeds.
      */
-    subscribed(callback: Function): Channel {
+    subscribed(callback: Function): this {
+        this.options["debug"] && console.log(`${LOG_PREFIX} subscribed for channel ${this.name} ...`);
+
         this.on('subscription_succeeded', () => {
             callback();
         });
@@ -87,7 +99,9 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Register a callback to be called anytime a subscription error occurs.
      */
-    error(callback: Function): Channel {
+    error(callback: Function): this {
+        this.options["debug"] && console.log(`${LOG_PREFIX} error for channel ${this.name} ...`);
+
         this.on('error', (status) => {
             callback(status);
         });
@@ -99,12 +113,14 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Bind a channel to an event.
      */
     on(event: string, callback: Function): Channel {
+        this.options["debug"] && console.log(`${LOG_PREFIX} on ${event} for channel ${this.name} ...`);
+
         this.socket.bind(this, event, callback)
 
         return this;
     }
 
-    whisper(event: string, data: object): Channel {
+    whisper(event: string, data: object): this {
         let channel = this.name;
         let formattedEvent = "client-" + event;
         this.socket.send({
@@ -116,7 +132,7 @@ export class Channel extends BaseChannel implements PresenceChannel {
         return this;
     }
 
-    here(callback: Function): Channel {
+    here(callback: Function): this {
         // TODO: implement
 
         return this
@@ -125,7 +141,7 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Listen for someone joining the channel.
      */
-    joining(callback: Function): Channel {
+    joining(callback: Function): this {
         // TODO: implement
 
         return this
@@ -134,9 +150,11 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Listen for someone leaving the channel.
      */
-    leaving(callback: Function): Channel {
+    leaving(callback: Function): this {
         // TODO: implement
 
         return this
     }
 }
+
+export { PresenceChannel };
