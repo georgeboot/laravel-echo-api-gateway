@@ -22,8 +22,8 @@ jobs:
       - run: git config --global user.name "GitHub CD bot"
       - run: git config --global user.email "github-cd-bot@github.com"
       - run: npm --no-git-tag-version version ${{ github.event.release.tag_name }}
-      #      - run: yarn run build
-      #      - run: yarn test
+      #      - run: npm run build
+      #      - run: npm run test
       - run: npm publish --verbose --access public --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
