@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - run: npm ci
+      - run: npm ci --verbose
       - run: git config --global user.name "GitHub CD bot"
       - run: git config --global user.email "github-cd-bot@github.com"
       - run: npm --no-git-tag-version version ${{ github.event.release.tag_name }}
