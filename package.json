@@ -40,6 +40,7 @@
         "@babel/plugin-transform-object-assign": "^7.8.3",
         "@babel/preset-env": "^7.9.6",
         "@rollup/plugin-babel": "^5.0.0",
+        "@types/babel__traverse": "^7.20.6",
         "@types/jest": "^24.0.18",
         "@types/node": "^12.7.5",
         "@typescript-eslint/eslint-plugin": "^3.7.0",
@@ -48,14 +49,17 @@
         "eslint": "^7.5.0",
         "jest": "^24.9.0",
         "jest-websocket-mock": "^2.2.0",
-        "laravel-echo": "^1.10.0",
+        "laravel-echo": "1.10.0",
         "mock-socket": "^9.0.3",
         "rollup": "^2.10.2",
+        "rollup-plugin-commonjs": "^10.1.0",
+        "rollup-plugin-json": "^4.0.0",
+        "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-typescript2": "^0.27.1",
         "standard-version": "^8.0.1",
         "ts-jest": "^24.1.0",
         "tslib": "^1.10.0",
-        "typescript": "^3.6.3"
+        "typescript": "^5.7.2"
     },
     "engines": {
         "node": ">=10"

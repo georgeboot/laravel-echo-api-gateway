@@ -7,9 +7,7 @@ export const broadcaster = (options: object): Connector => new Connector(options
 const LOG_PREFIX = '[LE-AG-Connector]';
 
 export class Connector extends BaseConnector {
-    /**
-     * The Socket.io connection instance.
-     */
+
     socket: Websocket;
 
     /**
