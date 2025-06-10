@@ -24,7 +24,7 @@
         "aws/aws-sdk-php": "^3.308",
         "bref/bref": "^1.1|^2.0",
         "guzzlehttp/guzzle": "^6.3|^7.0",
-        "laravel/framework": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0"
+        "laravel/framework": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0"
     },
     "require-dev": {
         "mockery/mockery": "^1.2",
