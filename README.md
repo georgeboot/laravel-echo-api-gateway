@@ -17,8 +17,8 @@ though the latter one involves some manual set-up.
 
 In order to use this package, your project needs to meet the following criteria:
 
-- PHP 7.4 or 8.x
-- Laravel 6 to 11
+- PHP 8.x
+- Laravel 6 to 12
 - Uses either [bref](https://bref.sh) or [Laravel Vapor](https://vapor.laravel.com) to deploy to AWS
 - Has a working queue
 - Uses Laravel Mix or any other tool to bundle your assets
