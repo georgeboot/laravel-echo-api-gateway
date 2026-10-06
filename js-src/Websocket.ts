@@ -1,148 +1,177 @@
-import { Channel } from "./Channel";
+import type { Channel } from "./Channel";
 
-export type Options = { authEndpoint: string, host: string, bearerToken: string, auth: any, debug: boolean };
+export type ChannelAuthorizationCallback = (error: unknown, data: AuthorizationData | null) => void;
 
-export type MessageBody = { event: string, channel?: string, data: object };
+export type ChannelAuthorization = {
+    endpoint?: string,
+    headers?: Record<string, string>,
+    customHandler?: (params: { socketId: string, channelName: string }, callback: ChannelAuthorizationCallback) => void,
+};
+
+export type Options = {
+    host?: string,
+    authEndpoint?: string,
+    auth?: { headers: Record<string, string> },
+    channelAuthorization?: ChannelAuthorization,
+    bearerToken?: string | null,
+    csrfToken?: string | null,
+    namespace?: string | false,
+    debug?: boolean,
+    /** Milliseconds between keep-alive pings. API Gateway closes idle connections after 10 minutes. */
+    pingInterval?: number,
+    /** Milliseconds to wait before the first reconnect attempt. Later attempts back off exponentially. */
+    reconnectDelay?: number,
+    /** Upper bound for the reconnect delay, in milliseconds. */
+    maxReconnectDelay?: number,
+    [key: string]: any,
+};
+
+export type MessageBody = { event: string, channel?: string, data?: any };
+
+export type AuthorizationData = { auth: string, channel_data?: string };
+
+export type AuthorizationError = { type: 'AuthError', status: number | null, error: unknown };
 
 const LOG_PREFIX = '[LE-AG-Websocket]';
 
-export class Websocket {
-    buffer: Array<object> = [];
+const OPEN = 1;
 
+export class Websocket {
     options: Options;
 
-    websocket: WebSocket;
+    websocket: WebSocket | undefined;
 
-    private listeners: { [channelName: string]: { [eventName: string]: Function } } = {};
+    private buffer: Array<MessageBody> = [];
 
-    private internalListeners: { [eventName: string]: Function } = {};
+    /**
+     * Every channel that should be subscribed, re-subscribed each time a new connection is identified.
+     */
+    private channels: Map<string, Channel> = new Map();
 
-    private channelBacklog = [];
+    private listeners: { [channelName: string]: { [eventName: string]: Function[] } } = {};
 
-    private socketId: string;
+    private socketId: string | undefined;
 
     private closing = false;
-    private hasConnected = false;
 
-    private pingInterval: NodeJS.Timeout;
+    private reconnectAttempts = 0;
+
+    private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+
+    private pingTimer: ReturnType<typeof setInterval> | undefined;
 
     constructor(options: Options) {
         this.options = options;
 
-        this.connect(this.options.host);
-
-        return this;
+        if (this.options.host) {
+            this.connect();
+        }
     }
 
-    private connect(host: string): void {
+    private connect(): void {
+        const host = this.options.host;
 
-        if (!host) {
-            this.options.debug && console.error(LOG_PREFIX + `Cannont connect without host !`);
+        this.debug(`Trying to connect to ${host}...`);
+
+        const websocket = new WebSocket(host);
+        this.websocket = websocket;
+
+        websocket.onopen = () => {
+            this.debug('Connected !');
+            this.reconnectAttempts = 0;
+
+            this.send({ event: 'whoami' });
+
+            while (this.buffer.length) {
+                this.send(this.buffer.shift());
+            }
+
+            this.startPing();
+        };
+
+        websocket.onmessage = (messageEvent: MessageEvent) => {
+            this.handleMessage(messageEvent.data);
+        };
+
+        websocket.onerror = () => {
+            // A close event always follows an error, so reconnecting is handled in onclose.
+            this.debug('Connection error.');
+        };
+
+        websocket.onclose = () => {
+            if (this.websocket !== websocket) {
+                return;
+            }
+
+            this.debug('Connection closed.');
+
+            this.stopPing();
+            this.socketId = undefined;
+
+            if (!this.closing) {
+                this.scheduleReconnect();
+            }
+        };
+    }
+
+    private scheduleReconnect(): void {
+        const baseDelay = this.options.reconnectDelay ?? 1000;
+        const maxDelay = this.options.maxReconnectDelay ?? 30000;
+        const delay = Math.min(baseDelay * 2 ** this.reconnectAttempts, maxDelay);
+
+        this.reconnectAttempts++;
+        this.debug(`Connection lost, reconnecting in ${delay}ms...`);
+
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => this.connect(), delay);
+    }
+
+    private startPing(): void {
+        this.stopPing();
+
+        this.pingTimer = setInterval(() => {
+            if (this.socketIsReady()) {
+                this.debug('Sending ping');
+                this.send({ event: 'ping' });
+            }
+        }, this.options.pingInterval ?? 60 * 1000);
+    }
+
+    private stopPing(): void {
+        clearInterval(this.pingTimer);
+        this.pingTimer = undefined;
+    }
+
+    private handleMessage(body: string): void {
+        const message = this.parseMessage(body);
+
+        if (!message) {
+            return;
+        }
+
+        this.debug('onmessage', body);
+
+        if (message.channel) {
+            this.dispatch(message.channel, message.event, message.data);
 
             return;
         }
 
-        this.options.debug && console.log(LOG_PREFIX + `Trying to connect to ${host}...` );
+        if (message.event === 'whoami') {
+            this.socketId = message.data?.socket_id;
+            this.debug(`Just set socketId to ${this.socketId}`);
 
-        this.websocket = new WebSocket(host);
-
-        this.websocket.onerror = () => {
-
-            if (!this.hasConnected) {
-
-                setTimeout(() => {
-                    this.socketId = undefined;
-                    this.connect(host);
-                }, 3000);
-            }
-        };
-
-        this.websocket.onopen = () => {
-            this.options.debug && console.log(LOG_PREFIX + ' Connected !');
-            this.hasConnected = true;
-
-            this.send({
-                event: 'whoami',
-            });
-
-            while (this.buffer.length) {
-                const message = this.buffer[0];
-
-                this.send(message);
-
-                this.buffer.splice(0, 1);
-            }
-
-            // Register events only once connected, or they won't be registered if connection failed/lost
-
-            this.websocket.onmessage = (messageEvent: MessageEvent) => {
-                const message = this.parseMessage(messageEvent.data);
-                this.options.debug && console.log(LOG_PREFIX + ' onmessage', messageEvent.data);
-
-                if (!message) {
-                    return;
-                }
-
-                if (message.channel) {
-                    this.options.debug && console.log(`${LOG_PREFIX} Received event ${message.event} on channel ${message.channel}`);
-
-                    if (this.listeners[message.channel] && this.listeners[message.channel][message.event]) {
-                        this.listeners[message.channel][message.event](message.data);
-                    }
-
-                    return;
-                }
-
-                if (this.internalListeners[message.event]) {
-                    this.internalListeners[message.event](message.data);
-                }
-            }
-
-
-            // send ping every 60 seconds to keep connection alive
-            this.pingInterval = setInterval(() => {
-                if (this.websocket.readyState === this.websocket.OPEN) {
-                    this.options.debug && console.log(LOG_PREFIX + ' Sending ping');
-
-                    this.send({
-                        event: 'ping',
-                    });
-                }
-            }, 60 * 1000);
+            this.channels.forEach((channel) => this.actuallySubscribe(channel));
         }
-
-
-        this.websocket.onclose = () => {
-            this.options.debug && console.info('Connection closed.');
-
-            if (this.closing){
-                return;
-            }
-
-            this.hasConnected = false;
-            this.options.debug && console.info('Connection lost, reconnecting...');
-
-            setTimeout(() => {
-                this.socketId = undefined;
-                this.connect(host);
-            }, 1000);
-        };
-
-        this.on('whoami', ({ socket_id: socketId }) => {
-            this.socketId = socketId;
-
-            this.options.debug && console.log(`${LOG_PREFIX} Just set socketId to ${socketId}`);
-
-            // Handle the backlog and don't empty it, we'll need it if we lose connection
-            let channel: Channel;
-
-            for(channel of this.channelBacklog){
-                this.actuallySubscribe(channel);
-            }
-        });
     }
 
-    protected parseMessage(body: string): MessageBody {
+    private dispatch(channelName: string, event: string, data: unknown): void {
+        const callbacks = this.listeners[channelName]?.[event] ?? [];
+
+        callbacks.slice().forEach((callback) => callback(data));
+    }
+
+    protected parseMessage(body: string): MessageBody | undefined {
         try {
             return JSON.parse(body);
         } catch (error) {
@@ -152,17 +181,18 @@ export class Websocket {
         }
     }
 
-    getSocketId(): string {
+    getSocketId(): string | undefined {
         return this.socketId;
     }
 
     private socketIsReady(): boolean {
-        return this.websocket.readyState === this.websocket.OPEN;
+        return this.websocket?.readyState === OPEN;
     }
 
-    send(message: object): void {
+    send(message: MessageBody): void {
         if (this.socketIsReady()) {
             this.websocket.send(JSON.stringify(message));
+
             return;
         }
 
@@ -171,110 +201,129 @@ export class Websocket {
 
     close(): void {
         this.closing = true;
-        this.internalListeners = {};
 
-        clearInterval(this.pingInterval);
-        this.pingInterval = undefined;
+        clearTimeout(this.reconnectTimer);
+        this.stopPing();
 
-        this.websocket.close();
+        this.websocket?.close();
     }
 
     subscribe(channel: Channel): void {
-        if (this.getSocketId()) {
+        this.channels.set(channel.name, channel);
+
+        if (this.socketId && this.socketIsReady()) {
             this.actuallySubscribe(channel);
         } else {
-            this.options.debug && console.log(`${LOG_PREFIX} subscribe - push channel backlog for channel ${channel.name}`);
-
-            this.channelBacklog.push(channel);
+            this.debug(`Channel ${channel.name} will be subscribed once connected`);
         }
     }
 
     private actuallySubscribe(channel: Channel): void {
-        if (channel.name.startsWith('private-') || channel.name.startsWith('presence-')) {
-            this.options.debug && console.log(`${LOG_PREFIX} Sending auth request for channel ${channel.name}`);
+        if (!channel.name.startsWith('private-') && !channel.name.startsWith('presence-')) {
+            this.debug(`Subscribing to channel ${channel.name}`);
+            this.send({ event: 'subscribe', data: { channel: channel.name } });
 
-            if (this.options.bearerToken) {
-                this.options.auth.headers['Authorization'] = 'Bearer ' + this.options.bearerToken;
+            return;
+        }
+
+        const socketId = this.socketId;
+
+        this.debug(`Sending auth request for channel ${channel.name}`);
+
+        this.authorize(channel.name, socketId).then((data) => {
+            // Skip outdated authorizations: the connection changed or the channel was left meanwhile.
+            if (socketId !== this.socketId || this.channels.get(channel.name) !== channel) {
+                return;
             }
 
-            fetch(this.options.authEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.options.auth.headers,
-                },
-                body: JSON.stringify({
-                    socket_id: this.getSocketId(),
-                    channel_name: channel.name,
-                }),
-            }).then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Auth request failed: ${response.status}`);
-                }
+            this.debug(`Subscribing to private channel ${channel.name}`);
+            this.send({ event: 'subscribe', data: { channel: channel.name, ...data } });
+        }).catch((error: AuthorizationError) => {
+            this.debug(`Auth request for channel ${channel.name} failed`, error);
+            this.dispatch(channel.name, 'error', error);
+        });
+    }
 
-                return response.json();
-            }).then((data) => {
-                this.options.debug && console.log(`${LOG_PREFIX} Subscribing to private channel ${channel.name}`);
+    private authorize(channelName: string, socketId: string): Promise<AuthorizationData> {
+        const channelAuthorization = this.options.channelAuthorization ?? {};
 
-                this.send({
-                    event: 'subscribe',
-                    data: {
-                        channel: channel.name,
-                        ...data,
-                    },
+        if (typeof channelAuthorization.customHandler === 'function') {
+            return new Promise((resolve, reject) => {
+                channelAuthorization.customHandler({ socketId, channelName }, (error, data) => {
+                    if (error) {
+                        reject(this.authorizationError(error, (error as any)?.status ?? null));
+                    } else {
+                        resolve(data);
+                    }
                 });
-            }).catch((error) => {
-                this.options.debug && console.log(`${LOG_PREFIX} Auth request for channel ${channel.name} failed`);
-                this.options.debug && console.error(error);
-            })
-        } else {
-            this.options.debug && console.log(`${LOG_PREFIX} Subscribing to channel ${channel.name}`);
-
-            this.send({
-                event: 'subscribe',
-                data: {
-                    channel: channel.name,
-                },
             });
         }
+
+        return fetch(channelAuthorization.endpoint ?? this.options.authEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...this.options.auth?.headers,
+                ...channelAuthorization.headers,
+            },
+            body: JSON.stringify({
+                socket_id: socketId,
+                channel_name: channelName,
+            }),
+        }).then((response) => {
+            if (!response.ok) {
+                throw this.authorizationError(new Error(`Auth request failed: ${response.status}`), response.status);
+            }
+
+            return response.json();
+        }, (error) => {
+            throw this.authorizationError(error, null);
+        });
+    }
+
+    private authorizationError(error: unknown, status: number | null): AuthorizationError {
+        return { type: 'AuthError', status, error };
     }
 
     unsubscribe(channel: Channel): void {
-        this.options.debug && console.log(`${LOG_PREFIX} unsubscribe for channel ${channel.name}`);
+        this.debug(`unsubscribe for channel ${channel.name}`);
 
-        this.send({
-            event: 'unsubscribe',
-            data: {
-                channel: channel.name,
-            },
-        });
-
-        if (this.listeners[channel.name]) {
+        if (this.channels.get(channel.name) === channel) {
+            this.channels.delete(channel.name);
             delete this.listeners[channel.name];
         }
-    }
 
-    on(event: string, callback: Function = null): void {
-        this.options.debug && console.log(`${LOG_PREFIX} on event ${event} ...`);
-
-        this.internalListeners[event] = callback;
+        if (this.socketId && this.socketIsReady()) {
+            this.send({ event: 'unsubscribe', data: { channel: channel.name } });
+        }
     }
 
     bind(channel: Channel, event: string, callback: Function): void {
-        this.options.debug && console.log(`${LOG_PREFIX} bind event ${event} for channel ${channel.name} ...`);
+        this.debug(`bind event ${event} for channel ${channel.name} ...`);
 
-        if (!this.listeners[channel.name]) {
-            this.listeners[channel.name] = {};
-        }
-
-        this.listeners[channel.name][event] = callback;
+        this.listeners[channel.name] ??= {};
+        this.listeners[channel.name][event] ??= [];
+        this.listeners[channel.name][event].push(callback);
     }
 
-    unbindEvent(channel: Channel, event: string, callback: Function = null): void {
-        this.options.debug && console.log(`${LOG_PREFIX} unbind event ${event} for channel ${channel.name} ...`);
+    unbind(channel: Channel, event: string, callback?: Function): void {
+        this.debug(`unbind event ${event} for channel ${channel.name} ...`);
 
-        if (this.internalListeners[event] && (callback === null || this.internalListeners[event] === callback)) {
-            delete this.internalListeners[event];
+        const callbacks = this.listeners[channel.name]?.[event];
+
+        if (!callbacks) {
+            return;
         }
+
+        if (callback) {
+            this.listeners[channel.name][event] = callbacks.filter((existing) => existing !== callback);
+        } else {
+            delete this.listeners[channel.name][event];
+        }
+    }
+
+    private debug(...messages: unknown[]): void {
+        this.options.debug && console.log(LOG_PREFIX, ...messages);
     }
 }

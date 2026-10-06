@@ -86,36 +86,34 @@ class Handler extends WebsocketHandler
     protected function subscribe(WebsocketEvent $event, Context $context): void
     {
         $eventBody = json_decode($event->getBody(), true);
+        $data = $eventBody['data'] ?? null;
 
-        // fill missing values
-        $eventBody['data'] += ['auth' => null, 'channel_data' => []];
+        if (! is_array($data) || ! is_string($data['channel'] ?? null)) {
+            $this->sendMessage($event, $context, [
+                'event' => 'error',
+                'data' => [
+                    'message' => 'Invalid subscribe message',
+                ],
+            ]);
 
-        [
-            'channel' => $channel,
-            'auth' => $auth,
-            'channel_data' => $channelData,
-        ] = $eventBody['data'];
+            return;
+        }
 
-        if (Str::startsWith($channel, ['private-', 'presence-'])) {
-            $data = "{$event->getConnectionId()}:{$channel}";
+        $channel = $data['channel'];
+        $auth = is_string($data['auth'] ?? null) ? $data['auth'] : '';
+        $channelData = is_string($data['channel_data'] ?? null) ? $data['channel_data'] : null;
 
-            if ($channelData) {
-                $data .= ':' . $channelData;
-            }
+        if (Str::startsWith($channel, ['private-', 'presence-'])
+            && ! Signature::verify($auth, $event->getConnectionId(), $channel, $channelData)) {
+            $this->sendMessage($event, $context, [
+                'event' => 'error',
+                'channel' => $channel,
+                'data' => [
+                    'message' => 'Invalid auth signature',
+                ],
+            ]);
 
-            $signature = hash_hmac('sha256', $data, config('app.key'), false);
-
-            if ($signature !== $auth) {
-                $this->sendMessage($event, $context, [
-                    'event' => 'error',
-                    'channel' => $channel,
-                    'data' => [
-                        'message' => 'Invalid auth signature',
-                    ],
-                ]);
-
-                return;
-            }
+            return;
         }
 
         $this->subscriptionRepository->subscribeToChannel($event->getConnectionId(), $channel);
@@ -143,21 +141,32 @@ class Handler extends WebsocketHandler
 
     public function broadcastToChannel(WebsocketEvent $event, Context $context): void
     {
-        $skipConnectionId = $event->getConnectionId();
+        $senderConnectionId = $event->getConnectionId();
         $eventBody = json_decode($event->getBody(), true);
-        $channel = Arr::get($eventBody, 'channel');
-        $event = Arr::get($eventBody, 'event');
-        $payload = Arr::get($eventBody, 'data');
-        if (is_object($payload) || is_array($payload)) {
-            $payload = json_encode($payload);
+        $channel = (string) Arr::get($eventBody, 'channel');
+
+        // Like Pusher, only members of private or presence channels may send client events.
+        if (! Str::startsWith($channel, ['private-', 'presence-'])
+            || ! $this->subscriptionRepository->isSubscribed($senderConnectionId, $channel)) {
+            $this->sendMessage($event, $context, [
+                'event' => 'error',
+                'channel' => $channel,
+                'data' => [
+                    'message' => 'Client events can only be sent to subscribed private or presence channels',
+                ],
+            ]);
+
+            return;
         }
+
         $data = json_encode([
-            'event'=>$event,
-            'channel'=>$channel,
-            'data'=>$payload,
-        ]) ?: '';
+            'event' => Arr::get($eventBody, 'event'),
+            'channel' => $channel,
+            'data' => Arr::get($eventBody, 'data'),
+        ], JSON_THROW_ON_ERROR);
+
         $this->subscriptionRepository->getConnectionIdsForChannel($channel)
-            ->reject(fn ($connectionId) => $connectionId === $skipConnectionId)
+            ->reject(fn ($connectionId) => $connectionId === $senderConnectionId)
             ->each(fn (string $connectionId) => $this->sendMessageToConnection($connectionId, $data));
     }
 
