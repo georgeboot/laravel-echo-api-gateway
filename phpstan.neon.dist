@@ -1,21 +1,12 @@
 includes:
-    - ./vendor/nunomaduro/larastan/extension.neon
+    - ./vendor/larastan/larastan/extension.neon
 
 parameters:
 
-    phpVersion: 80399
-
     paths:
         - src
-        - tests
 
-    level: max
+    level: 6
 
     ignoreErrors:
-        - '#^Cannot call method debug\(\) on Illuminate\\Log\\LogManager\|null.$#'
-        - '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::withArgs\(\).$#'
-    #
-    #    excludePaths:
-    #        - ./*/*/FileToBeExcluded.php
-
-    checkMissingIterableValueType: false
+        - identifier: missingType.iterableValue

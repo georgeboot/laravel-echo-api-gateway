@@ -1,14 +1,15 @@
 {
     "compilerOptions": {
         "declaration": true,
-        "module": "es6",
+        "declarationDir": "./dist",
+        "module": "es2015",
         "moduleResolution": "node",
         "outDir": "./dist",
         "sourceMap": false,
-        "target": "es6",
-        "isolatedModules": false,
+        "target": "es2017",
+        "strict": false,
         "esModuleInterop": true,
-        "preserveSymlinks": true,
+        "skipLibCheck": true,
         "typeRoots": [
             "node_modules/@types"
         ],
@@ -19,7 +20,6 @@
     },
     "include": [
         "./typings/",
-        "./js-src/",
-        "./node_modules/laravel-echo/src/"
+        "./js-src/"
     ]
 }

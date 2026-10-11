@@ -18,10 +18,11 @@ though the latter one involves some manual set-up.
 In order to use this package, your project needs to meet the following criteria:
 
 - PHP 8.x
-- Laravel 6 to 12
+- Laravel 6 to 13
 - Uses either [bref](https://bref.sh) or [Laravel Vapor](https://vapor.laravel.com) to deploy to AWS
 - Has a working queue
-- Uses Laravel Mix or any other tool to bundle your assets
+- Uses [laravel-echo](https://github.com/laravel/echo) v1.10+ or v2 on the client
+- Uses Vite, Laravel Mix or any other tool to bundle your assets (or Node.js 18+ for non-browser clients)
 
 ## Installation
 
@@ -32,10 +33,10 @@ First we have to install both the composer and npm package:
 ```shell
 composer require georgeboot/laravel-echo-api-gateway
 
-yarn add laravel-echo-api-gateway
-# or
-npm install --save-dev laravel-echo-api-gateway
+npm install --save-dev laravel-echo laravel-echo-api-gateway
 ```
+
+`laravel-echo` is a peer dependency: the package works with the version your app already uses (v1.10+ or v2).
 
 ### Platform-specific instructions
 
@@ -51,8 +52,7 @@ functions:
     # Add this function
     websocket:
         handler: handlers/websocket.php
-        layers:
-            - ${bref:layer.php-80}
+        runtime: php-83
         events:
             - websocket: $disconnect
             - websocket: $default
@@ -122,6 +122,8 @@ provider:
         LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE: !Ref ConnectionsTable
         LARAVEL_ECHO_API_GATEWAY_API_ID: !Ref WebsocketsApi
         LARAVEL_ECHO_API_GATEWAY_API_STAGE: "${self:provider.stage}"
+        # Optional, see "Signing secret" below
+        LARAVEL_ECHO_API_GATEWAY_SECRET: ${ssm:/my-app/echo-api-gateway-secret}
 ```
 
 Next, create the PHP handler file in `handlers/websocket.php`
@@ -180,7 +182,16 @@ BROADCAST_DRIVER=laravel-echo-api-gateway
 LARAVEL_ECHO_API_GATEWAY_DYNAMODB_TABLE=the-table-name-you-entered-when-creating-it
 LARAVEL_ECHO_API_GATEWAY_API_ID=your-websocket-api-id
 LARAVEL_ECHO_API_GATEWAY_API_STAGE=your-api-stage-name
+# Optional, see "Signing secret" below
+LARAVEL_ECHO_API_GATEWAY_SECRET=a-long-random-string
 ```
+
+### Signing secret
+
+Private and presence channels are authorized by your app (`/broadcasting/auth`), which signs the socket id and channel
+name. The websocket handler verifies that signature before subscribing the connection. By default both use your
+`APP_KEY`. If the websocket handler runs as a separate app, set the same `LARAVEL_ECHO_API_GATEWAY_SECRET` on both
+instead of sharing your `APP_KEY`.
 
 ### Generate front-end code
 
@@ -188,30 +199,95 @@ Add to your javascript file:
 
 ```js
 import Echo from 'laravel-echo';
-import {broadcaster} from 'laravel-echo-api-gateway';
+import { Connector } from 'laravel-echo-api-gateway';
 
 window.Echo = new Echo({
-    broadcaster,
+    broadcaster: Connector,
     // replace the placeholders
-    host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
+    host: 'wss://{api-id}.execute-api.{region}.amazonaws.com/{stage}',
     authEndpoint: '{auth-url}/broadcasting/auth', // Optional: Use if you have a separate authentication endpoint
     bearerToken: '{token}', // Optional: Use if you need a Bearer Token for authentication
 });
 ```
 
-You can also enable console output by passing a `debug: true` otpion to your window.Echo intializer : 
-```js
-import Echo from 'laravel-echo';
-import {broadcaster} from 'laravel-echo-api-gateway';
+The `broadcaster` export from previous versions keeps working: `new Echo({ broadcaster, ... })`.
 
+With TypeScript and laravel-echo v2, its typings do not accept custom connector classes yet, so cast the option:
+`broadcaster: Connector as any`.
+
+#### Using `@laravel/echo-react` or `@laravel/echo-vue`
+
+```ts
+import { configureEcho } from '@laravel/echo-react';
+import { Connector } from 'laravel-echo-api-gateway';
+
+configureEcho({
+    broadcaster: Connector as any,
+    host: import.meta.env.VITE_ECHO_API_GATEWAY_HOST,
+});
+```
+
+#### Using it outside the browser (Node.js, Electron)
+
+The connector only needs the global `WebSocket` and `fetch`, available in Node.js 22+ (or 18+ with a `WebSocket`
+polyfill such as [ws](https://github.com/websockets/ws) assigned to `globalThis.WebSocket`).
+
+To authorize private channels with your own logic, pass a custom handler. It receives the socket id and channel name
+and must call back with the response of your `/broadcasting/auth` endpoint:
+
+```js
+const echo = new Echo({
+    broadcaster: Connector,
+    host: 'wss://{api-id}.execute-api.{region}.amazonaws.com/{stage}',
+    channelAuthorization: {
+        customHandler: ({ socketId, channelName }, callback) => {
+            fetch('https://my-app.test/api/broadcasting/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ socket_id: socketId, channel_name: channelName }),
+            })
+                .then((response) => response.json())
+                .then((data) => callback(null, data))
+                .catch((error) => callback(error, null));
+        },
+    },
+});
+```
+
+You can also pass `channelAuthorization: { endpoint, headers }` to only change the endpoint or add headers.
+Authorization failures and rejected subscriptions are reported to `channel.error(callback)`.
+
+#### Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `host` | | The websocket URL of your API Gateway stage. |
+| `authEndpoint` | `/broadcasting/auth` | Endpoint used to authorize private and presence channels. |
+| `bearerToken` | | Sent as `Authorization: Bearer ...` to the auth endpoint. |
+| `auth.headers` | `{}` | Extra headers sent to the auth endpoint. |
+| `channelAuthorization` | | `{ endpoint, headers, customHandler }`, see above. |
+| `pingInterval` | `60000` | Milliseconds between keep-alive pings. API Gateway closes idle connections after 10 minutes. |
+| `reconnectDelay` | `1000` | Milliseconds before the first reconnect attempt. Later attempts back off exponentially. |
+| `maxReconnectDelay` | `30000` | Upper bound for the reconnect delay. |
+| `debug` | `false` | Log connection activity to the console. |
+
+API Gateway closes every websocket connection after 2 hours. The connector reconnects automatically and subscribes
+again to every channel you joined, so your listeners keep receiving events.
+
+You can also enable console output by passing a `debug: true` option to your Echo initializer:
+
+```js
 window.Echo = new Echo({
-    broadcaster,
-    // replace the placeholders
-    host: 'wss://{api-ip}.execute-api.{region}.amazonaws.com/{stage}',
+    broadcaster: Connector,
+    host: 'wss://{api-id}.execute-api.{region}.amazonaws.com/{stage}',
     debug: true
 });
 ```
 
+Lastly, build your assets (for example with Vite or Laravel Mix). After this step, you should be up and running.
 
+### Limitations
 
-Lastly, you have to generate your assets by running Laravel Mix. After this step, you should be up and running.
+- Presence channels can be joined, but member tracking (`here`, `joining`, `leaving`) is not implemented yet.
+- Client events (whispers) can only be sent by connections subscribed to the private or presence channel, like Pusher.
+- Encrypted private channels are not supported.

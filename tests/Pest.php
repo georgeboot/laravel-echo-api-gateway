@@ -12,3 +12,26 @@
 */
 
 uses(\Tests\TestCase::class)->in(__DIR__);
+
+/**
+ * Build the Lambda event API Gateway sends when a client posts a websocket message.
+ */
+function websocketMessage(array $body, string $connectionId = 'connection-id-1'): array
+{
+    return [
+        'requestContext' => [
+            'routeKey' => 'my-test-route-key',
+            'eventType' => 'MESSAGE',
+            'connectionId' => $connectionId,
+            'domainName' => 'test-domain',
+            'apiId' => 'api-id-1',
+            'stage' => 'stage-test',
+        ],
+        'body' => json_encode($body),
+    ];
+}
+
+function lambdaContext(): \Bref\Context\Context
+{
+    return new \Bref\Context\Context('request-id-1', 50_000, 'function-arn', 'trace-id-1');
+}

@@ -71,14 +71,10 @@ class Driver extends Broadcaster
         );
     }
 
-    protected function generateSignature(string $channel, string $socketId, string $customData = null): array
+    protected function generateSignature(string $channel, string $socketId, ?string $customData = null): array
     {
-        $data = $customData ? "{$socketId}:{$channel}:{$customData}" : "{$socketId}:{$channel}";
-
-        $signature = hash_hmac('sha256', $data, config('app.key'), false);
-
         $response = [
-            'auth' => $signature,
+            'auth' => Signature::make($socketId, $channel, $customData),
         ];
 
         if ($customData) {
@@ -88,7 +84,7 @@ class Driver extends Broadcaster
         return $response;
     }
 
-    protected function generateSignaturePresence(string $channel, string $socketId, int $userId, array $userInfo = null): array
+    protected function generateSignaturePresence(string $channel, string $socketId, int $userId, ?array $userInfo = null): array
     {
         $userData = [
             'user_id' => $userId,

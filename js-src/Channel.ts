@@ -1,16 +1,18 @@
-import { EventFormatter } from 'laravel-echo/src/util';
-import { Channel as BaseChannel } from 'laravel-echo/src/channel/channel';
-import { PresenceChannel } from "laravel-echo/src/channel";
+import { EventFormatter } from "./EventFormatter";
 import { Websocket } from "./Websocket";
+import type { Options } from "./Websocket";
 
 const LOG_PREFIX = '[LE-AG-Channel]';
 
+const NOTIFICATION_EVENT = '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated';
+
 /**
- * This class represents a Pusher channel.
+ * A channel on the API Gateway websocket. It implements the public, private and presence channel
+ * interfaces of laravel-echo (v1 and v2) without extending its internal classes.
  */
-export class Channel extends BaseChannel implements PresenceChannel {
+export class Channel {
     /**
-     * The Pusher client instance.
+     * The websocket connection.
      */
     socket: Websocket;
 
@@ -22,7 +24,7 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Channel options.
      */
-    options: object;
+    options: Options;
 
     /**
      * The event formatter.
@@ -32,31 +34,29 @@ export class Channel extends BaseChannel implements PresenceChannel {
     /**
      * Create a new class instance.
      */
-    constructor(socket: Websocket, name: string, options: object) {
-        super();
-
+    constructor(socket: Websocket, name: string, options: Options) {
         this.name = name;
         this.socket = socket;
         this.options = options;
-        this.eventFormatter = new EventFormatter(this.options["namespace"]);
+        this.eventFormatter = new EventFormatter(this.options.namespace);
 
         this.subscribe();
     }
 
     /**
-     * Subscribe to a Pusher channel.
+     * Subscribe to the channel.
      */
-    subscribe(): any {
-        this.options["debug"] && console.log(`${LOG_PREFIX} subscribe for channel ${this.name} ...`);
+    subscribe(): void {
+        this.options.debug && console.log(`${LOG_PREFIX} subscribe for channel ${this.name} ...`);
 
-        this.socket.subscribe(this)
+        this.socket.subscribe(this);
     }
 
     /**
-     * Unsubscribe from a Pusher channel.
+     * Unsubscribe from the channel.
      */
     unsubscribe(): void {
-        this.options["debug"] && console.log(`${LOG_PREFIX} unsubscribe for channel ${this.name} ...`);
+        this.options.debug && console.log(`${LOG_PREFIX} unsubscribe for channel ${this.name} ...`);
 
         this.socket.unsubscribe(this);
     }
@@ -65,96 +65,108 @@ export class Channel extends BaseChannel implements PresenceChannel {
      * Listen for an event on the channel instance.
      */
     listen(event: string, callback: Function): this {
-        this.options["debug"] && console.log(`${LOG_PREFIX} listen to ${event} for channel ${this.name} ...`);
+        this.options.debug && console.log(`${LOG_PREFIX} listen to ${event} for channel ${this.name} ...`);
 
-        this.on(this.eventFormatter.format(event), callback);
+        return this.on(this.eventFormatter.format(event), callback);
+    }
+
+    /**
+     * Stop listening for an event on the channel instance. Without a callback, every listener of the event is removed.
+     */
+    stopListening(event: string, callback?: Function): this {
+        this.options.debug && console.log(`${LOG_PREFIX} stop listening to ${event} for channel ${this.name} ...`);
+
+        this.socket.unbind(this, this.eventFormatter.format(event), callback);
 
         return this;
     }
 
     /**
-     * Stop listening for an event on the channel instance.
+     * Listen for a whisper event on the channel instance.
      */
-    stopListening(event: string, callback?: Function): this {
-        this.options["debug"] && console.log(`${LOG_PREFIX} stop listening to ${event} for channel ${this.name} ...`);
+    listenForWhisper(event: string, callback: Function): this {
+        return this.listen('.client-' + event, callback);
+    }
 
-        this.socket.unbindEvent(this, event, callback)
+    /**
+     * Stop listening for a whisper event on the channel instance.
+     */
+    stopListeningForWhisper(event: string, callback?: Function): this {
+        return this.stopListening('.client-' + event, callback);
+    }
 
-        return this;
+    /**
+     * Listen for an event on the channel instance.
+     */
+    notification(callback: Function): this {
+        return this.listen(NOTIFICATION_EVENT, callback);
+    }
+
+    /**
+     * Stop listening for notification events on the channel instance.
+     */
+    stopListeningForNotification(callback?: Function): this {
+        return this.stopListening(NOTIFICATION_EVENT, callback);
     }
 
     /**
      * Register a callback to be called anytime a subscription succeeds.
      */
     subscribed(callback: Function): this {
-        this.options["debug"] && console.log(`${LOG_PREFIX} subscribed for channel ${this.name} ...`);
-
-        this.on('subscription_succeeded', () => {
+        return this.on('subscription_succeeded', () => {
             callback();
         });
-
-        return this;
     }
 
     /**
-     * Register a callback to be called anytime a subscription error occurs.
+     * Register a callback to be called anytime a subscription or authorization error occurs.
      */
     error(callback: Function): this {
-        this.options["debug"] && console.log(`${LOG_PREFIX} error for channel ${this.name} ...`);
-
-        this.on('error', (status) => {
-            callback(status);
-        });
-
-        return this;
+        return this.on('error', callback);
     }
 
     /**
      * Bind a channel to an event.
      */
-    on(event: string, callback: Function): Channel {
-        this.options["debug"] && console.log(`${LOG_PREFIX} on ${event} for channel ${this.name} ...`);
+    on(event: string, callback: Function): this {
+        this.options.debug && console.log(`${LOG_PREFIX} on ${event} for channel ${this.name} ...`);
 
-        this.socket.bind(this, event, callback)
+        this.socket.bind(this, event, callback);
 
         return this;
     }
 
-    whisper(event: string, data: object): this {
-        let channel = this.name;
-        let formattedEvent = "client-" + event;
+    /**
+     * Send a client event to the other members of the channel.
+     */
+    whisper(event: string, data: unknown): this {
         this.socket.send({
-            "event": formattedEvent,
+            event: 'client-' + event,
+            channel: this.name,
             data,
-            channel,
-        })
+        });
 
         return this;
     }
 
-    here(callback: Function): this {
-        // TODO: implement
-
-        return this
+    /**
+     * Presence channels are not supported yet: member tracking is not implemented on the server.
+     */
+    here(_callback: Function): this {
+        return this;
     }
 
     /**
-     * Listen for someone joining the channel.
+     * Presence channels are not supported yet: member tracking is not implemented on the server.
      */
-    joining(callback: Function): this {
-        // TODO: implement
-
-        return this
+    joining(_callback: Function): this {
+        return this;
     }
 
     /**
-     * Listen for someone leaving the channel.
+     * Presence channels are not supported yet: member tracking is not implemented on the server.
      */
-    leaving(callback: Function): this {
-        // TODO: implement
-
-        return this
+    leaving(_callback: Function): this {
+        return this;
     }
 }
-
-export { PresenceChannel };

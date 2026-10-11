@@ -3,7 +3,6 @@
 namespace Georgeboot\LaravelEchoApiGateway;
 
 use Aws\DynamoDb\DynamoDbClient;
-use GuzzleHttp\Promise\Utils;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
@@ -22,47 +21,81 @@ class SubscriptionRepository
         $this->table = $config['dynamodb']['table'];
     }
 
+    /**
+     * @return Collection<int, string>
+     */
     public function getConnectionIdsForChannel(string ...$channels): Collection
     {
-        $promises = collect($channels)->map(fn ($channel) => $this->dynamoDb->queryAsync([
-            'TableName' => $this->table,
-            'IndexName' => 'lookup-by-channel',
-            'KeyConditionExpression' => 'channel = :channel',
-            'ExpressionAttributeValues' => [
-                ':channel' => ['S' => $channel],
-            ],
-        ]))->toArray();
+        $connectionIds = [];
 
-        $responses = Utils::all($promises)->wait();
+        foreach ($channels as $channel) {
+            foreach ($this->queryItems('lookup-by-channel', 'channel', $channel) as $item) {
+                $connectionIds[] = $item['connectionId']['S'];
+            }
+        }
 
-        return collect($responses)
-             ->flatmap(fn (\Aws\Result $result): array => $result['Items'])
-            ->map(fn (array $item): string => $item['connectionId']['S'])
-            ->unique();
+        return collect($connectionIds)->unique()->values();
     }
 
     public function clearConnection(string $connectionId): void
     {
-        $response = $this->dynamoDb->query([
-            'TableName' => $this->table,
-            'IndexName' => 'lookup-by-connection',
-            'KeyConditionExpression' => 'connectionId = :connectionId',
-            'ExpressionAttributeValues' => [
-                ':connectionId' => ['S' => $connectionId],
-            ],
-        ]);
+        $keys = array_map(
+            fn (array $item): array => Arr::only($item, ['connectionId', 'channel']),
+            $this->queryItems('lookup-by-connection', 'connectionId', $connectionId),
+        );
 
-        if (! empty($response['Items'])) {
+        // BatchWriteItem accepts at most 25 requests per call.
+        foreach (array_chunk($keys, 25) as $chunk) {
             $this->dynamoDb->batchWriteItem([
                 'RequestItems' => [
-                    $this->table => collect($response['Items'])->map(fn ($item) => [
+                    $this->table => array_map(fn (array $key): array => [
                         'DeleteRequest' => [
-                            'Key' => Arr::only($item, ['connectionId', 'channel']),
+                            'Key' => $key,
                         ],
-                    ])->toArray(),
+                    ], $chunk),
                 ],
             ]);
         }
+    }
+
+    /**
+     * Query an index and return the items of every result page.
+     *
+     * @return array<int, array<string, array<string, string>>>
+     */
+    protected function queryItems(string $index, string $attribute, string $value): array
+    {
+        $paginator = $this->dynamoDb->getPaginator('Query', [
+            'TableName' => $this->table,
+            'IndexName' => $index,
+            'KeyConditionExpression' => "{$attribute} = :value",
+            'ExpressionAttributeValues' => [
+                ':value' => ['S' => $value],
+            ],
+        ]);
+
+        $items = [];
+
+        foreach ($paginator as $page) {
+            foreach ($page['Items'] ?? [] as $item) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    public function isSubscribed(string $connectionId, string $channel): bool
+    {
+        $response = $this->dynamoDb->getItem([
+            'TableName' => $this->table,
+            'Key' => [
+                'connectionId' => ['S' => $connectionId],
+                'channel' => ['S' => $channel],
+            ],
+        ]);
+
+        return ! empty($response['Item']);
     }
 
     public function subscribeToChannel(string $connectionId, string $channel): void
